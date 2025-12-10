@@ -61,10 +61,7 @@
                         </div>
                     </form>
 
-                    <div class="mb-6 flex justify-between items-center">
-                        <div class="text-sm font-semibold text-rose-700">
-                            Найдено: {{ $users->total() }} пользователей
-                        </div>
+                    <div class="mb-6 flex justify-end">
                         <a href="{{ route('admin.users.create') }}" class="inline-flex items-center gap-2 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold px-6 py-2.5 rounded-xl shadow-md">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
@@ -148,14 +145,17 @@
                                             @endif
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <a href="{{ route('admin.users.edit', $user) }}" class="text-rose-600 hover:text-rose-800 font-semibold mr-4">
-                                                Редактировать
-                                            </a>
+                                            @if($user->role != 1)
+                                                <a href="{{ route('admin.users.edit', $user) }}" class="text-rose-600 hover:text-rose-800 font-semibold mr-4">
+                                                    Редактировать
+                                                </a>
+                                            @endif
                                             @php
                                                 $currentUser = Auth::user();
                                                 $isCurrentUserAndAdmin = $currentUser && (int)$currentUser->id === (int)$user->id && $currentUser->role == 2;
                                                 $isAdmin = $user->role == 2;
-                                                $canDelete = !$isCurrentUserAndAdmin && !$isAdmin;
+                                                $isRegularUser = $user->role == 1;
+                                                $canDelete = !$isCurrentUserAndAdmin && !$isAdmin && !$isRegularUser;
                                             @endphp
                                             @if($canDelete)
                                                 <form action="{{ route('admin.users.destroy', $user) }}" method="POST" class="inline" onsubmit="return confirm('Вы уверены, что хотите удалить этого пользователя?');">

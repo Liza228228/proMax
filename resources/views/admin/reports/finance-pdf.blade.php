@@ -93,8 +93,9 @@
             <div class="stat-value">{{ number_format($stats['total_revenue'], 0, '.', ' ') }} ₽</div>
         </div>
         <div class="stat-box">
-            <div class="stat-label">Всего заказов (Принято)</div>
+            <div class="stat-label">Всего заказов</div>
             <div class="stat-value">{{ $stats['total_orders'] }}</div>
+            <div class="stat-label" style="font-size: 7px; margin-top: 3px;">(Принят, Готов к выдаче, Выполнен)</div>
         </div>
     </div>
 

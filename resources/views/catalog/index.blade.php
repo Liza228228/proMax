@@ -9,7 +9,12 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <!-- Форма поиска и фильтров -->
             <div class="mb-6 bg-white overflow-hidden shadow-xl sm:rounded-2xl border-2 border-rose-200 p-6">
-                <form method="GET" action="{{ isset($category) ? route('catalog.category', $category) : route('catalog.index') }}" class="space-y-4">
+                <!-- Блок ошибок валидации -->
+                <div id="validation-errors" class="hidden mb-4 bg-gradient-to-r from-red-50 to-rose-50 border-2 border-red-400 text-red-800 px-6 py-4 rounded-xl shadow-lg" role="alert">
+                    <ul id="error-list" class="list-disc list-inside space-y-1 font-semibold"></ul>
+                </div>
+
+                <form method="GET" action="{{ isset($category) ? route('catalog.category', $category) : route('catalog.index') }}" class="space-y-4" id="catalog-filter-form" novalidate>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <!-- Поиск -->
                         <div class="lg:col-span-2">
@@ -47,12 +52,10 @@
                         <!-- Минимальная цена -->
                         <div>
                             <label for="price_min" class="block text-sm font-semibold text-rose-700 mb-2">Цена от (₽)</label>
-                            <input type="number" 
+                            <input type="text" 
                                    id="price_min" 
                                    name="price_min" 
                                    value="{{ request('price_min') }}" 
-                                   min="0" 
-                                   step="0.01"
                                    placeholder="0"
                                    class="w-full px-4 py-2 border-2 border-rose-300 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-rose-500">
                         </div>
@@ -60,12 +63,10 @@
                         <!-- Максимальная цена -->
                         <div>
                             <label for="price_max" class="block text-sm font-semibold text-rose-700 mb-2">Цена до (₽)</label>
-                            <input type="number" 
+                            <input type="text" 
                                    id="price_max" 
                                    name="price_max" 
                                    value="{{ request('price_max') }}" 
-                                   min="0" 
-                                   step="0.01"
                                    placeholder="Без ограничений"
                                    class="w-full px-4 py-2 border-2 border-rose-300 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-rose-500">
                         </div>
@@ -149,7 +150,7 @@
                                             @endphp
                                             <div class="mb-3 p-3 bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-300 rounded-xl">
                                                 <p class="text-xs font-bold text-yellow-800 text-center">
-                                                    ⚠️ Срок годности истекает через {{ $daysLeft }} {{ $daysLeft == 1 ? 'день' : ($daysLeft == 2 ? 'дня' : 'дней') }}
+                                                     Срок годности истекает через {{ $daysLeft }} {{ $daysLeft == 1 ? 'день' : ($daysLeft == 2 ? 'дня' : 'дней') }}
                                                 </p>
                                             </div>
                                         @endif
@@ -261,7 +262,7 @@
                                             @endphp
                                             <div class="mb-3 p-3 bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-300 rounded-xl">
                                                 <p class="text-xs font-bold text-yellow-800 text-center">
-                                                    ⚠️ Срок годности истекает через {{ $daysLeft }} {{ $daysLeft == 1 ? 'день' : ($daysLeft == 2 ? 'дня' : 'дней') }}
+                                                     Срок годности истекает через {{ $daysLeft }} {{ $daysLeft == 1 ? 'день' : ($daysLeft == 2 ? 'дня' : 'дней') }}
                                                 </p>
                                             </div>
                                         @endif
@@ -446,4 +447,164 @@
             @endif
         </div>
     </div>
+
+    <!-- Кастомная валидация формы фильтрации -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('catalog-filter-form');
+            const priceMinInput = document.getElementById('price_min');
+            const priceMaxInput = document.getElementById('price_max');
+            const validationErrors = document.getElementById('validation-errors');
+            const errorList = document.getElementById('error-list');
+
+            // Функция отображения ошибок
+            function showErrors(errors) {
+                errorList.innerHTML = '';
+                errors.forEach(error => {
+                    const li = document.createElement('li');
+                    li.textContent = error;
+                    errorList.appendChild(li);
+                });
+                validationErrors.classList.remove('hidden');
+                
+                // Прокрутка к ошибкам
+                validationErrors.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            // Функция скрытия ошибок
+            function hideErrors() {
+                validationErrors.classList.add('hidden');
+                errorList.innerHTML = '';
+            }
+
+            // Функция валидации цены
+            function validatePrice(value, fieldName) {
+                if (value === '' || value === null) {
+                    return { valid: true, value: null };
+                }
+
+                // Удаляем пробелы
+                value = value.toString().trim();
+
+                // Проверяем формат числа
+                const numericValue = parseFloat(value);
+                
+                if (isNaN(numericValue)) {
+                    return { 
+                        valid: false, 
+                        error: `${fieldName} должна быть числом` 
+                    };
+                }
+
+                if (numericValue < 0) {
+                    return { 
+                        valid: false, 
+                        error: `${fieldName} не может быть отрицательной` 
+                    };
+                }
+
+                return { valid: true, value: numericValue };
+            }
+
+            // Обработка отправки формы
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                hideErrors();
+
+                const errors = [];
+                const priceMin = priceMinInput.value;
+                const priceMax = priceMaxInput.value;
+
+                // Валидация минимальной цены
+                const minValidation = validatePrice(priceMin, 'Цена от');
+                if (!minValidation.valid) {
+                    errors.push(minValidation.error);
+                    priceMinInput.classList.add('border-red-500');
+                } else {
+                    priceMinInput.classList.remove('border-red-500');
+                }
+
+                // Валидация максимальной цены
+                const maxValidation = validatePrice(priceMax, 'Цена до');
+                if (!maxValidation.valid) {
+                    errors.push(maxValidation.error);
+                    priceMaxInput.classList.add('border-red-500');
+                } else {
+                    priceMaxInput.classList.remove('border-red-500');
+                }
+
+                // Проверка соотношения цен
+                if (minValidation.valid && maxValidation.valid && 
+                    minValidation.value !== null && maxValidation.value !== null) {
+                    if (minValidation.value > maxValidation.value) {
+                        errors.push('Минимальная цена не может быть больше максимальной');
+                        priceMinInput.classList.add('border-red-500');
+                        priceMaxInput.classList.add('border-red-500');
+                    }
+                }
+
+                // Если есть ошибки - показываем их
+                if (errors.length > 0) {
+                    showErrors(errors);
+                    return false;
+                }
+
+                // Если валидация прошла - отправляем форму
+                form.submit();
+            });
+
+            // Очистка ошибок при вводе
+            priceMinInput.addEventListener('input', function() {
+                this.classList.remove('border-red-500');
+                if (errorList.children.length > 0) {
+                    hideErrors();
+                }
+            });
+
+            priceMaxInput.addEventListener('input', function() {
+                this.classList.remove('border-red-500');
+                if (errorList.children.length > 0) {
+                    hideErrors();
+                }
+            });
+
+            // Запрет ввода всего кроме цифр и точки (для цен с копейками)
+            [priceMinInput, priceMaxInput].forEach(input => {
+                input.addEventListener('keydown', function(e) {
+                    // Разрешаем: Backspace, Delete, Tab, Escape, Enter, стрелки
+                    const allowedKeys = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+                    
+                    // Если нажата служебная клавиша - разрешаем
+                    if (allowedKeys.includes(e.key)) {
+                        return;
+                    }
+                    
+                    // Если нажат Ctrl/Cmd + A, C, V, X - разрешаем (копирование/вставка/выделение)
+                    if ((e.ctrlKey || e.metaKey) && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase())) {
+                        return;
+                    }
+                    
+                    // Разрешаем точку (только если её ещё нет в поле)
+                    if (e.key === '.' && !this.value.includes('.')) {
+                        return;
+                    }
+                    
+                    // Проверяем, что это цифра (0-9)
+                    if (!/^[0-9]$/.test(e.key)) {
+                        e.preventDefault();
+                    }
+                });
+
+                input.addEventListener('paste', function(e) {
+                    // Получаем вставляемый текст
+                    const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                    
+                    // Проверяем, что вставляемый текст содержит только цифры и возможно одну точку
+                    if (!/^\d+\.?\d*$/.test(pastedText) || pastedText.includes('-')) {
+                        e.preventDefault();
+                    }
+                });
+            });
+        });
+    </script>
 </x-app-layout>

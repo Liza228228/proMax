@@ -19,22 +19,27 @@ class FeaturedController extends Controller
         // Получаем выбранные товары
         $featuredIds = Cache::get('featured_products', []);
         
-        // Получаем все доступные товары
-        $allProducts = Product::with(['category', 'images', 'stockProducts'])
-            ->where('available', true)
-            ->orderBy('created_at', 'desc')
-            ->get();
-        
         // Получаем выбранные товары с сохранением порядка
         $featuredProducts = collect();
         if (!empty($featuredIds)) {
-            foreach ($featuredIds as $id) {
-                $product = $allProducts->firstWhere('id', $id);
-                if ($product) {
-                    $featuredProducts->push($product);
-                }
-            }
+            $featuredProducts = Product::with(['category', 'images', 'stockProducts'])
+                ->whereIn('id', $featuredIds)
+                ->where('available', true)
+                ->get()
+                ->sortBy(function($product) use ($featuredIds) {
+                    return array_search($product->id, $featuredIds);
+                })
+                ->values();
         }
+        
+        // Получаем все доступные товары с пагинацией, исключая уже выбранные
+        $allProducts = Product::with(['category', 'images', 'stockProducts'])
+            ->where('available', true)
+            ->when(!empty($featuredIds), function($query) use ($featuredIds) {
+                $query->whereNotIn('id', $featuredIds);
+            })
+            ->orderBy('created_at', 'desc')
+            ->paginate(15);
         
         return view('admin.featured.index', compact('featuredProducts', 'allProducts'));
     }

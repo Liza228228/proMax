@@ -89,7 +89,7 @@
                                 </p>
                                 @if($product->weight)
                                     <p class="text-lg text-rose-700 font-semibold">
-                                        Вес: {{ $product->weight }} г
+                                        Вес: {{ $product->weight }} гр
                                     </p>
                                 @endif
                             </div>
@@ -138,7 +138,7 @@
                                     @endphp
                                     <div class="p-4 bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-300 rounded-xl">
                                         <p class="text-sm font-bold text-yellow-800 text-center">
-                                            ⚠️ Внимание! Срок годности истекает через {{ $daysLeft }} {{ $daysLeft == 1 ? 'день' : ($daysLeft == 2 ? 'дня' : 'дней') }}
+                                            Срок годности истекает через {{ $daysLeft }} {{ $daysLeft == 1 ? 'день' : ($daysLeft == 2 ? 'дня' : 'дней') }}
                                         </p>
                                     </div>
                                 @endif

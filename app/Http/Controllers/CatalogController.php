@@ -18,7 +18,11 @@ class CatalogController extends Controller
         // Если есть поиск, показываем все товары с фильтрацией
         if ($request->filled('search') || $request->filled('category_id') || $request->filled('price_min') || $request->filled('price_max')) {
             $query = Product::with(['category', 'images', 'stockProducts'])
-                ->where('available', true);
+                ->where('available', true)
+                ->whereHas('stockProducts', function($q) {
+                    $q->where('expiration_date', '>=', Carbon::today())
+                      ->where('quantity', '>', 0);
+                });
 
             // Поиск по названию и описанию
             if ($request->filled('search')) {
@@ -55,6 +59,10 @@ class CatalogController extends Controller
         $categories = Category::where('available', true)
             ->with(['products' => function($query) {
                 $query->where('available', true)
+                      ->whereHas('stockProducts', function($q) {
+                          $q->where('expiration_date', '>=', Carbon::today())
+                            ->where('quantity', '>', 0);
+                      })
                       ->with(['images', 'stockProducts'])
                       ->orderBy('created_at', 'desc')
                       ->limit(12);
@@ -80,7 +88,11 @@ class CatalogController extends Controller
     {
         $query = Product::with(['category', 'images', 'stockProducts'])
             ->where('idCategory', $category->id)
-            ->where('available', true);
+            ->where('available', true)
+            ->whereHas('stockProducts', function($q) {
+                $q->where('expiration_date', '>=', Carbon::today())
+                  ->where('quantity', '>', 0);
+            });
 
         // Поиск
         if ($request->filled('search')) {
@@ -136,6 +148,10 @@ class CatalogController extends Controller
             ->where('idCategory', $product->idCategory)
             ->where('id', '!=', $product->id)
             ->where('available', true)
+            ->whereHas('stockProducts', function($q) {
+                $q->where('expiration_date', '>=', Carbon::today())
+                  ->where('quantity', '>', 0);
+            })
             ->limit(4)
             ->get();
         

@@ -32,7 +32,7 @@
 
             @if ($errors->any())
                 <div class="mb-6 bg-gradient-to-r from-red-50 to-rose-50 border-2 border-red-400 text-red-800 px-6 py-4 rounded-xl shadow-lg" role="alert">
-                    <div class="font-semibold mb-2">Исправьте следующие ошибки:</div>
+                    
                     <ul class="list-disc list-inside">
                         @foreach ($errors->all() as $error)
                             <li>{{ $error }}</li>
@@ -207,76 +207,45 @@
                     <div class="bg-white overflow-hidden shadow-xl sm:rounded-2xl border-2 border-rose-200">
                         <div class="p-6 text-gray-900">
                             <div class="mb-4">
-                                <div class="flex justify-between items-center mb-4">
-                                    <h3 class="text-lg font-bold text-rose-700">Ингредиенты на складе</h3>
-                                    @if(isset($stockIngredients) && $stockIngredients->total() > 0)
-                                        <form method="GET" action="{{ route('manager.warehouses.show', $warehouse) }}" class="flex gap-2 items-end">
-                                            <input type="hidden" name="expiration_filter" value="{{ request('expiration_filter') }}">
-                                            <input type="hidden" name="date_filter" value="{{ request('date_filter') }}">
-                                            <div>
-                                                <label for="search_ingredient" class="block text-xs font-semibold text-rose-700 mb-1">Поиск</label>
-                                                <input type="text" 
-                                                       id="search_ingredient"
-                                                       name="search_ingredient" 
-                                                       value="{{ request('search_ingredient') }}"
-                                                       placeholder="Поиск ингредиента..."
-                                                       class="w-64 rounded-xl border-2 border-rose-300 px-4 py-2 shadow-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500">
-                                            </div>
-                                            <button type="submit" 
-                                                    class="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold px-4 py-2 rounded-xl shadow-md">
-                                                Поиск
-                                            </button>
-                                            @if(request('search_ingredient') || request('expiration_filter') || request('date_filter'))
-                                                <a href="{{ route('manager.warehouses.show', $warehouse) }}" 
-                                                   class="bg-white border-2 border-rose-300 text-rose-700 font-bold px-4 py-2 rounded-xl hover:bg-rose-50 shadow-sm">
-                                                    Сбросить
-                                                </a>
-                                            @endif
-                                        </form>
-                                    @endif
-                                </div>
-                                
-                                <!-- Кнопки фильтрации по сроку годности (Актуальное/Просроченное) -->
-                                <div class="flex gap-2 mb-2">
-                                    <form method="GET" action="{{ route('manager.warehouses.show', $warehouse) }}" class="inline">
-                                        <input type="hidden" name="search_ingredient" value="{{ request('search_ingredient') }}">
-                                        <input type="hidden" name="date_filter" value="{{ request('date_filter', 'with_date') }}">
-                                        <input type="hidden" name="expiration_filter" value="actual">
+                                <div class="mb-4">
+                                    <h3 class="text-lg font-bold text-rose-700 mb-4">Ингредиенты на складе</h3>
+                                    
+                                    <!-- Объединенная форма поиска и фильтрации -->
+                                    <form method="GET" action="{{ route('manager.warehouses.show', $warehouse) }}" class="flex flex-wrap items-end gap-3">
+                                        <!-- Поиск -->
+                                        <div class="flex-1 min-w-[200px]">
+                                            <label for="search_ingredient" class="block text-sm font-semibold text-rose-700 mb-1">Поиск</label>
+                                            <input type="text" 
+                                                   id="search_ingredient"
+                                                   name="search_ingredient" 
+                                                   value="{{ request('search_ingredient') }}"
+                                                   placeholder="Поиск ингредиента..."
+                                                   class="w-full rounded-xl border-2 border-rose-300 px-4 py-2 shadow-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500">
+                                        </div>
+                                        
+                                        <!-- Фильтр по сроку годности -->
+                                        <div>
+                                            <label for="expiration_filter" class="block text-sm font-semibold text-rose-700 mb-1">Срок годности</label>
+                                            <select id="expiration_filter" 
+                                                    name="expiration_filter" 
+                                                    class="px-4 py-2 border-2 border-rose-300 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-rose-500 shadow-sm font-medium">
+                                                <option value="all" {{ request('expiration_filter', 'all') === 'all' ? 'selected' : '' }}>Все</option>
+                                                <option value="actual" {{ request('expiration_filter') === 'actual' ? 'selected' : '' }}>Актуальные</option>
+                                                <option value="expired" {{ request('expiration_filter') === 'expired' ? 'selected' : '' }}>Просроченные</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <!-- Кнопка поиска -->
                                         <button type="submit" 
-                                                class="px-4 py-2 rounded-xl font-bold shadow-md transition-colors {{ (request('expiration_filter', 'actual') === 'actual') ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' : 'bg-white border-2 border-green-300 text-green-700 hover:bg-green-50' }}">
-                                            Актуальное
+                                                class="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold px-6 py-2 rounded-xl shadow-md">
+                                            Применить
                                         </button>
-                                    </form>
-                                    <form method="GET" action="{{ route('manager.warehouses.show', $warehouse) }}" class="inline">
-                                        <input type="hidden" name="search_ingredient" value="{{ request('search_ingredient') }}">
-                                        <input type="hidden" name="date_filter" value="{{ request('date_filter', 'with_date') }}">
-                                        <input type="hidden" name="expiration_filter" value="expired">
-                                        <button type="submit" 
-                                                class="px-4 py-2 rounded-xl font-bold shadow-md transition-colors {{ request('expiration_filter', 'actual') === 'expired' ? 'bg-gradient-to-r from-red-500 to-rose-500 text-white' : 'bg-white border-2 border-red-300 text-red-700 hover:bg-red-50' }}">
-                                            Просроченное
-                                        </button>
-                                    </form>
-                                </div>
-                                
-                                <!-- Кнопки фильтрации по режиму отображения (Раздельно/Суммировать) -->
-                                <div class="flex gap-2 mb-4">
-                                    <form method="GET" action="{{ route('manager.warehouses.show', $warehouse) }}" class="inline">
-                                        <input type="hidden" name="search_ingredient" value="{{ request('search_ingredient') }}">
-                                        <input type="hidden" name="expiration_filter" value="{{ request('expiration_filter', 'actual') }}">
-                                        <input type="hidden" name="date_filter" value="with_date">
-                                        <button type="submit" 
-                                                class="px-4 py-2 rounded-xl font-bold shadow-md transition-colors {{ (request('date_filter', 'with_date') === 'with_date') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : 'bg-white border-2 border-blue-300 text-blue-700 hover:bg-blue-50' }}">
-                                            Раздельно
-                                        </button>
-                                    </form>
-                                    <form method="GET" action="{{ route('manager.warehouses.show', $warehouse) }}" class="inline">
-                                        <input type="hidden" name="search_ingredient" value="{{ request('search_ingredient') }}">
-                                        <input type="hidden" name="expiration_filter" value="{{ request('expiration_filter', 'actual') }}">
-                                        <input type="hidden" name="date_filter" value="without_date">
-                                        <button type="submit" 
-                                                class="px-4 py-2 rounded-xl font-bold shadow-md transition-colors {{ request('date_filter', 'with_date') === 'without_date' ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' : 'bg-white border-2 border-purple-300 text-purple-700 hover:bg-purple-50' }}">
-                                            Суммировать
-                                        </button>
+                                        
+                                        <!-- Кнопка сброса -->
+                                        <a href="{{ route('manager.warehouses.show', $warehouse) }}" 
+                                           class="bg-white border-2 border-rose-300 text-rose-700 font-bold px-6 py-2 rounded-xl hover:bg-rose-50 shadow-sm">
+                                            Сбросить
+                                        </a>
                                     </form>
                                 </div>
                             </div>
@@ -292,11 +261,9 @@
                                                 <th class="px-6 py-3 text-left text-xs font-bold text-rose-700 uppercase tracking-wider">
                                                     Количество
                                                 </th>
-                                                @if(request('date_filter') !== 'without_date')
-                                                    <th class="px-6 py-3 text-left text-xs font-bold text-rose-700 uppercase tracking-wider">
-                                                        Срок годности
-                                                    </th>
-                                                @endif
+                                                <th class="px-6 py-3 text-left text-xs font-bold text-rose-700 uppercase tracking-wider">
+                                                    Срок годности
+                                                </th>
                                             </tr>
                                         </thead>
                                         <tbody class="bg-white divide-y divide-rose-200">
@@ -318,28 +285,26 @@
                                                             {{ number_format($stock->quantity, 0, '.', ' ') }} г
                                                         @endif
                                                     </td>
-                                                    @if(request('date_filter') !== 'without_date')
-                                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                                            @if($expirationDate)
-                                                                {{ $expirationDate->format('d.m.Y') }}
-                                                                @if($isExpiringSoon)
-                                                                    <span class="ml-2 inline-block px-2 py-1 text-xs font-bold rounded-full bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-800 border border-yellow-300">
-                                                                        ⚠️ Истекает через {{ $daysUntilExpiration }} {{ $daysUntilExpiration == 1 ? 'день' : ($daysUntilExpiration == 2 ? 'дня' : 'дней') }}
-                                                                    </span>
-                                                                @elseif($isExpired)
-                                                                    <span class="ml-2 inline-block px-2 py-1 text-xs font-bold rounded-full bg-gradient-to-r from-red-100 to-rose-100 text-red-700 border border-red-300">
-                                                                        Просрочено
-                                                                    </span>
-                                                                @endif
-                                                            @else
-                                                                <span class="text-gray-400">Не указан</span>
+                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                                        @if($expirationDate)
+                                                            {{ $expirationDate->format('d.m.Y') }}
+                                                            @if($isExpiringSoon)
+                                                                <span class="ml-2 inline-block px-2 py-1 text-xs font-bold rounded-full bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-800 border border-yellow-300">
+                                                                     Истекает через {{ $daysUntilExpiration }} {{ $daysUntilExpiration == 1 ? 'день' : ($daysUntilExpiration == 2 ? 'дня' : 'дней') }}
+                                                                </span>
+                                                            @elseif($isExpired)
+                                                                <span class="ml-2 inline-block px-2 py-1 text-xs font-bold rounded-full bg-gradient-to-r from-red-100 to-rose-100 text-red-700 border border-red-300">
+                                                                    Просрочено
+                                                                </span>
                                                             @endif
-                                                        </td>
-                                                    @endif
+                                                        @else
+                                                            <span class="text-gray-400">Не указан</span>
+                                                        @endif
+                                                    </td>
                                                 </tr>
                                             @empty
                                                 <tr>
-                                                    <td colspan="{{ request('date_filter') === 'without_date' ? '2' : '3' }}" class="px-6 py-4 text-center text-sm text-rose-600 font-semibold">
+                                                    <td colspan="3" class="px-6 py-4 text-center text-sm text-rose-600 font-semibold">
                                                         Ингредиенты не найдены
                                                     </td>
                                                 </tr>

@@ -9,14 +9,15 @@
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-2xl border-2 border-rose-200">
                 <div class="p-6 text-gray-900">
-                    <form method="POST" action="{{ route('admin.products.update', $product) }}" enctype="multipart/form-data">
+                    <form method="POST" action="{{ route('admin.products.update', $product) }}" id="product-edit-form" enctype="multipart/form-data" novalidate>
                         @csrf
                         @method('PATCH')
 
                         <!-- Name Product -->
                         <div>
                             <x-input-label for="name_product" :value="__('Название продукта')" />
-                            <x-text-input id="name_product" class="block mt-1 w-full" type="text" name="name_product" :value="old('name_product', $product->name_product)" required autofocus />
+                            <x-text-input id="name_product" class="block mt-1 w-full" type="text" name="name_product" :value="old('name_product', $product->name_product)" autofocus />
+                            <div id="name_product_error" class="hidden mt-2 text-sm text-red-600 font-semibold"></div>
                             <x-input-error :messages="$errors->get('name_product')" class="mt-2" />
                         </div>
 
@@ -27,6 +28,7 @@
                                       name="description" 
                                       rows="4" 
                                       class="block mt-1 w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600">{{ old('description', $product->description) }}</textarea>
+                            <div id="description_error" class="hidden mt-2 text-sm text-red-600 font-semibold"></div>
                             <x-input-error :messages="$errors->get('description')" class="mt-2" />
                         </div>
 
@@ -34,14 +36,16 @@
                             <!-- Weight -->
                             <div>
                                 <x-input-label for="weight" :value="__('Вес (кг)')" />
-                                <x-text-input id="weight" class="block mt-1 w-full" type="number" step="0.01" name="weight" :value="old('weight', $product->weight)" />
+                                <x-text-input id="weight" class="block mt-1 w-full" type="text" name="weight" :value="old('weight', $product->weight)" />
+                                <div id="weight_error" class="hidden mt-2 text-sm text-red-600 font-semibold"></div>
                                 <x-input-error :messages="$errors->get('weight')" class="mt-2" />
                             </div>
 
                             <!-- Price -->
                             <div>
                                 <x-input-label for="price" :value="__('Цена (₽)')" />
-                                <x-text-input id="price" class="block mt-1 w-full" type="number" step="0.01" name="price" :value="old('price', $product->price)" required />
+                                <x-text-input id="price" class="block mt-1 w-full" type="text" name="price" :value="old('price', $product->price)" />
+                                <div id="price_error" class="hidden mt-2 text-sm text-red-600 font-semibold"></div>
                                 <x-input-error :messages="$errors->get('price')" class="mt-2" />
                             </div>
                         </div>
@@ -59,13 +63,11 @@
                                 <x-input-label for="expiration_days" :value="__('Срок годности (дней)')" />
                                 <x-text-input id="expiration_days" 
                                              class="block mt-1 w-full" 
-                                             type="number" 
+                                             type="text" 
                                              name="expiration_days" 
-                                             :value="old('expiration_days', $product->expiration_date ?? 7)" 
-                                             min="1"
-                                             step="1"
-                                             required />
+                                             :value="old('expiration_days', $product->expiration_date ?? 7)" />
                                 <p class="mt-1 text-sm text-gray-500">Укажите срок годности в количестве дней от текущей даты</p>
+                                <div id="expiration_days_error" class="hidden mt-2 text-sm text-red-600 font-semibold"></div>
                                 <x-input-error :messages="$errors->get('expiration_days')" class="mt-2" />
                             </div>
                         </div>
@@ -75,8 +77,7 @@
                             <x-input-label for="idCategory" :value="__('Категория')" />
                             <select id="idCategory" 
                                     name="idCategory" 
-                                    class="block mt-1 w-full rounded-xl border-2 border-rose-300 px-4 py-2 shadow-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500 bg-white text-gray-900 font-medium transition-all" 
-                                    required>
+                                    class="block mt-1 w-full rounded-xl border-2 border-rose-300 px-4 py-2 shadow-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500 bg-white text-gray-900 font-medium transition-all">
                                 <option value="">Выберите категорию</option>
                                 @foreach($categories as $category)
                                     <option value="{{ $category->id }}" {{ old('idCategory', $product->idCategory) == $category->id ? 'selected' : '' }}>
@@ -84,6 +85,7 @@
                                     </option>
                                 @endforeach
                             </select>
+                            <div id="idCategory_error" class="hidden mt-2 text-sm text-red-600 font-semibold"></div>
                             <x-input-error :messages="$errors->get('idCategory')" class="mt-2" />
                         </div>
 
@@ -327,7 +329,6 @@
                                 select.name = 'ingredients[' + ingredientRowCount + '][id]';
                                 select.id = 'ingredient-select-' + ingredientRowCount;
                                 select.className = 'block w-full rounded-xl border-2 border-rose-300 px-4 py-2 shadow-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500 bg-white text-gray-900 font-medium transition-all';
-                                select.required = true;
                                 
                                 // Клонируем опции из шаблона
                                 const optionsClone = template.content.cloneNode(true);
@@ -353,10 +354,8 @@
                                 quantityInput.type = 'number';
                                 quantityInput.name = 'ingredients[' + ingredientRowCount + '][quantity]';
                                 quantityInput.value = quantity;
-                                quantityInput.min = 0.001;
-                                quantityInput.step = 0.001;
+                                quantityInput.type = 'text';
                                 quantityInput.className = 'block w-full rounded-xl border-2 border-rose-300 px-4 py-2 shadow-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500 bg-white text-gray-900 font-medium transition-all';
-                                quantityInput.required = true;
                                 
                                 quantityDiv.appendChild(quantityLabel);
                                 quantityDiv.appendChild(quantityInput);
@@ -373,7 +372,6 @@
                                 unitSelect.name = 'ingredients[' + ingredientRowCount + '][unit_id]';
                                 unitSelect.id = 'unit-select-' + ingredientRowCount;
                                 unitSelect.className = 'block w-full rounded-xl border-2 border-rose-300 px-4 py-2 shadow-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500 bg-white text-gray-900 font-medium transition-all';
-                                unitSelect.required = true;
                                 
                                 unitDiv.appendChild(unitLabel);
                                 unitDiv.appendChild(unitSelect);
@@ -408,7 +406,36 @@
                                 }
                                 
                                 // Добавляем обработчик изменения ингредиента
-                                select.addEventListener('change', updateUnitsForIngredient);
+                                select.addEventListener('change', function() {
+                                    updateUnitsForIngredient();
+                                    this.classList.remove('border-red-500');
+                                });
+                                
+                                // Обработчик для количества
+                                quantityInput.addEventListener('input', function() {
+                                    this.classList.remove('border-red-500');
+                                });
+                                
+                                // Запрет ввода минуса и некорректных символов в поле количества
+                                quantityInput.addEventListener('keydown', function(e) {
+                                    const allowedKeys = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+                                    if (allowedKeys.includes(e.key)) return;
+                                    if ((e.ctrlKey || e.metaKey) && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase())) return;
+                                    if (e.key === '.' && !this.value.includes('.')) return;
+                                    if (!/^[0-9]$/.test(e.key)) e.preventDefault();
+                                });
+                                
+                                quantityInput.addEventListener('paste', function(e) {
+                                    const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                                    if (!/^\d+\.?\d*$/.test(pastedText) || pastedText.includes('-')) {
+                                        e.preventDefault();
+                                    }
+                                });
+                                
+                                // Обработчик для единицы измерения
+                                unitSelect.addEventListener('change', function() {
+                                    this.classList.remove('border-red-500');
+                                });
                                 
                                 // Если ингредиент уже выбран, обновляем единицы
                                 if (ingredientId) {
@@ -479,6 +506,219 @@
                             </button>
                         </div>
                     </form>
+
+                    <!-- Кастомная валидация формы -->
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const form = document.getElementById('product-edit-form');
+                            const nameProductInput = document.getElementById('name_product');
+                            const descriptionInput = document.getElementById('description');
+                            const weightInput = document.getElementById('weight');
+                            const priceInput = document.getElementById('price');
+                            const expirationDaysInput = document.getElementById('expiration_days');
+                            const categorySelect = document.getElementById('idCategory');
+                            
+                            // Элементы для отображения ошибок
+                            const nameProductError = document.getElementById('name_product_error');
+                            const descriptionError = document.getElementById('description_error');
+                            const weightError = document.getElementById('weight_error');
+                            const priceError = document.getElementById('price_error');
+                            const expirationDaysError = document.getElementById('expiration_days_error');
+                            const categoryError = document.getElementById('idCategory_error');
+
+                            // Функция показа ошибки под полем
+                            function showFieldError(errorElement, message) {
+                                errorElement.textContent = message;
+                                errorElement.classList.remove('hidden');
+                            }
+
+                            // Функция скрытия ошибки под полем
+                            function hideFieldError(errorElement) {
+                                errorElement.classList.add('hidden');
+                                errorElement.textContent = '';
+                            }
+
+                            // Функция валидации числа
+                            function validateNumber(value, fieldName, allowNegative = false) {
+                                if (value === '' || value === null) {
+                                    return { valid: false, error: `Поле "${fieldName}" обязательно для заполнения` };
+                                }
+                                value = value.toString().trim();
+                                const numValue = parseFloat(value);
+                                if (isNaN(numValue)) {
+                                    return { valid: false, error: `Поле "${fieldName}" должно быть числом` };
+                                }
+                                if (!allowNegative && numValue < 0) {
+                                    return { valid: false, error: `Поле "${fieldName}" не может быть отрицательным` };
+                                }
+                                return { valid: true, value: numValue };
+                            }
+
+                            // Обработка отправки формы
+                            form.addEventListener('submit', function(e) {
+                                let hasErrors = false;
+                                
+                                // Проверка названия продукта
+                                if (!nameProductInput.value.trim()) {
+                                    showFieldError(nameProductError, 'Поле "Название продукта" обязательно для заполнения');
+                                    nameProductInput.classList.add('border-red-500');
+                                    hasErrors = true;
+                                } else {
+                                    hideFieldError(nameProductError);
+                                    nameProductInput.classList.remove('border-red-500');
+                                }
+
+                                // Проверка цены
+                                const priceValidation = validateNumber(priceInput.value, 'Цена', false);
+                                if (!priceValidation.valid) {
+                                    showFieldError(priceError, priceValidation.error);
+                                    priceInput.classList.add('border-red-500');
+                                    hasErrors = true;
+                                } else {
+                                    hideFieldError(priceError);
+                                    priceInput.classList.remove('border-red-500');
+                                }
+
+                                // Проверка веса (если указан)
+                                if (weightInput.value.trim()) {
+                                    const weightValidation = validateNumber(weightInput.value, 'Вес', false);
+                                    if (!weightValidation.valid) {
+                                        showFieldError(weightError, weightValidation.error);
+                                        weightInput.classList.add('border-red-500');
+                                        hasErrors = true;
+                                    } else {
+                                        hideFieldError(weightError);
+                                        weightInput.classList.remove('border-red-500');
+                                    }
+                                }
+
+                                // Проверка срока годности
+                                const expirationValidation = validateNumber(expirationDaysInput.value, 'Срок годности', false);
+                                if (!expirationValidation.valid) {
+                                    showFieldError(expirationDaysError, expirationValidation.error);
+                                    expirationDaysInput.classList.add('border-red-500');
+                                    hasErrors = true;
+                                } else if (expirationValidation.value < 1) {
+                                    showFieldError(expirationDaysError, 'Срок годности должен быть не менее 1 дня');
+                                    expirationDaysInput.classList.add('border-red-500');
+                                    hasErrors = true;
+                                } else {
+                                    hideFieldError(expirationDaysError);
+                                    expirationDaysInput.classList.remove('border-red-500');
+                                }
+
+                                // Проверка категории
+                                if (!categorySelect.value) {
+                                    showFieldError(categoryError, 'Выберите категорию');
+                                    categorySelect.classList.add('border-red-500');
+                                    hasErrors = true;
+                                } else {
+                                    hideFieldError(categoryError);
+                                    categorySelect.classList.remove('border-red-500');
+                                }
+
+                                // Проверка ингредиентов
+                                const ingredientRows = document.querySelectorAll('[id^="ingredient-row-"]');
+                                if (ingredientRows.length === 0) {
+                                    hasErrors = true;
+                                } else {
+                                    ingredientRows.forEach((row, index) => {
+                                        const ingredientSelect = row.querySelector('select[name*="[id]"]');
+                                        const quantityInput = row.querySelector('input[name*="[quantity]"]');
+                                        const unitSelect = row.querySelector('select[name*="[unit_id]"]');
+                                        
+                                        if (!ingredientSelect || !ingredientSelect.value) {
+                                            ingredientSelect.classList.add('border-red-500');
+                                            hasErrors = true;
+                                        } else {
+                                            ingredientSelect.classList.remove('border-red-500');
+                                        }
+                                        
+                                        if (!quantityInput || !quantityInput.value.trim()) {
+                                            quantityInput.classList.add('border-red-500');
+                                            hasErrors = true;
+                                        } else {
+                                            const qtyValidation = validateNumber(quantityInput.value, 'Количество', false);
+                                            if (!qtyValidation.valid || qtyValidation.value <= 0) {
+                                                quantityInput.classList.add('border-red-500');
+                                                hasErrors = true;
+                                            } else {
+                                                quantityInput.classList.remove('border-red-500');
+                                            }
+                                        }
+                                        
+                                        if (!unitSelect || !unitSelect.value) {
+                                            unitSelect.classList.add('border-red-500');
+                                            hasErrors = true;
+                                        } else {
+                                            unitSelect.classList.remove('border-red-500');
+                                        }
+                                    });
+                                }
+
+                                if (hasErrors) {
+                                    e.preventDefault();
+                                    // Прокрутка к первому полю с ошибкой
+                                    const firstError = document.querySelector('.border-red-500');
+                                    if (firstError) {
+                                        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    }
+                                    return false;
+                                }
+                            });
+
+                            // Очистка ошибок при вводе
+                            nameProductInput.addEventListener('input', function() {
+                                this.classList.remove('border-red-500');
+                                hideFieldError(nameProductError);
+                            });
+
+                            priceInput.addEventListener('input', function() {
+                                this.classList.remove('border-red-500');
+                                hideFieldError(priceError);
+                            });
+
+                            weightInput.addEventListener('input', function() {
+                                this.classList.remove('border-red-500');
+                                hideFieldError(weightError);
+                            });
+
+                            expirationDaysInput.addEventListener('input', function() {
+                                this.classList.remove('border-red-500');
+                                hideFieldError(expirationDaysError);
+                            });
+
+                            categorySelect.addEventListener('change', function() {
+                                this.classList.remove('border-red-500');
+                                hideFieldError(categoryError);
+                            });
+
+                            // Запрет ввода минуса и некорректных символов в числовые поля
+                            [priceInput, weightInput, expirationDaysInput].forEach(input => {
+                                input.addEventListener('keydown', function(e) {
+                                    const allowedKeys = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+                                    if (allowedKeys.includes(e.key)) return;
+                                    if ((e.ctrlKey || e.metaKey) && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase())) return;
+                                    if (e.key === '.' && !this.value.includes('.')) return;
+                                    if (!/^[0-9]$/.test(e.key)) e.preventDefault();
+                                });
+
+                                input.addEventListener('paste', function(e) {
+                                    const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                                    if (!/^\d+\.?\d*$/.test(pastedText) || pastedText.includes('-')) {
+                                        e.preventDefault();
+                                    }
+                                });
+                            });
+
+                            // Для expiration_days запрещаем точку (только целые числа)
+                            expirationDaysInput.addEventListener('keydown', function(e) {
+                                if (e.key === '.' || e.key === ',') {
+                                    e.preventDefault();
+                                }
+                            });
+                        });
+                    </script>
 
                 </div>
             </div>

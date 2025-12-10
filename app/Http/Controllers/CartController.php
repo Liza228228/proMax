@@ -78,10 +78,10 @@ class CartController extends Controller
                 session()->put('url.intended', route('cart.checkout'));
                 return redirect()->route('login');
             }
-            return redirect()->route('cart.checkout')->with('success', 'Товар добавлен в корзину');
+            return redirect()->route('cart.checkout')->with('success', 'Продукция добавлена в корзину');
         }
 
-        return redirect()->back()->with('success', 'Товар добавлен в корзину');
+        return redirect()->back()->with('success', 'Продукция добавлена в корзину');
     }
 
     /**
@@ -92,12 +92,12 @@ class CartController extends Controller
         // Проверяем, что товар принадлежит текущей корзине
         $cart = Cart::getOrCreateCart();
         if ($cartItem->idCart !== $cart->id) {
-            return redirect()->route('cart.index')->with('error', 'Товар не найден в вашей корзине');
+            return redirect()->route('cart.index')->with('error', 'Продукция не найдена в вашей корзине');
         }
 
         $cartItem->delete();
 
-        return redirect()->route('cart.index')->with('success', 'Товар удален из корзины');
+        return redirect()->route('cart.index')->with('success', 'Продукция удалена из корзины');
     }
 
     /**
@@ -109,9 +109,9 @@ class CartController extends Controller
         $cart = Cart::getOrCreateCart();
         if ($cartItem->idCart !== $cart->id) {
             if ($request->ajax() || $request->wantsJson()) {
-                return response()->json(['error' => 'Товар не найден в вашей корзине'], 404);
+                return response()->json(['error' => 'Продукция не найдена в вашей корзине'], 404);
             }
-            return redirect()->route('cart.index')->with('error', 'Товар не найден в вашей корзине');
+            return redirect()->route('cart.index')->with('error', 'Продукция не найдена в вашей корзине');
         }
 
         $quantity = $request->input('quantity', 1);

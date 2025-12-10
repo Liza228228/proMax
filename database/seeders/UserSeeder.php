@@ -9,17 +9,15 @@ use Illuminate\Support\Facades\Hash;
 
 class UserSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
+
     public function run(): void
     {
         // Администратор (роль 2)
         User::updateOrCreate(
-            ['login' => '2'],
+            ['login' => 'admim'],
             [
-                'last_name' => '2',
-                'first_name' => '2',
+                'last_name' => 'Иванов',
+                'first_name' => 'Иван',
                 'phone' => '+7 (222) 222-22-22',
                 'password' => Hash::make('11111111'),
                 'role' => 2,
@@ -28,10 +26,10 @@ class UserSeeder extends Seeder
 
         // Менеджер (роль 3)
         User::updateOrCreate(
-            ['login' => '3'],
+            ['login' => 'meneger'],
             [
-                'last_name' => '3',
-                'first_name' => '3',
+                'last_name' => 'Федоров',
+                'first_name' => 'Кирилл',
                 'phone' => '+7 (333) 333-33-33',
                 'password' => Hash::make('11111111'),
                 'role' => 3,
@@ -40,10 +38,10 @@ class UserSeeder extends Seeder
 
         // Обычный пользователь (роль 1)
         User::updateOrCreate(
-            ['login' => '1'],
+            ['login' => 'user'],
             [
-                'last_name' => '1',
-                'first_name' => '1',
+                'last_name' => 'Абросимова',
+                'first_name' => 'Анастасия',
                 'phone' => '+7 (111) 111-11-11',
                 'password' => Hash::make('11111111'),
                 'role' => 1,

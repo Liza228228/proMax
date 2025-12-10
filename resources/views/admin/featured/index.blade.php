@@ -80,12 +80,11 @@
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-2xl border-2 border-rose-200">
                 <div class="p-6">
                     <h3 class="text-xl font-bold text-rose-700 mb-6">
-                        Добавить товар в новинки
+                        Добавить продукцию в новинки
                     </h3>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         @foreach($allProducts as $product)
-                            @if(!$featuredProducts->contains('id', $product->id))
                             <div class="flex items-center gap-3 p-3 bg-gradient-to-br from-rose-50 to-pink-50 border-2 border-rose-200 rounded-xl hover:shadow-md">
                                 <!-- Изображение -->
                                 <div class="w-12 h-12 flex-shrink-0 bg-gradient-to-br from-peach-100 to-rose-100 rounded-lg overflow-hidden border-2 border-rose-300">
@@ -120,9 +119,15 @@
                                     </button>
                                 </form>
                             </div>
-                            @endif
                         @endforeach
                     </div>
+                    
+                    <!-- Пагинация -->
+                    @if($allProducts->hasPages())
+                        <div class="mt-6">
+                            {{ $allProducts->links() }}
+                        </div>
+                    @endif
                 </div>
             </div>
             @endif

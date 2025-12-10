@@ -18,6 +18,11 @@
                 </div>
             @endif
 
+            <!-- Блок ошибок валидации -->
+            <div id="validation-errors" class="hidden mb-6 bg-gradient-to-r from-red-50 to-rose-50 border-2 border-red-400 text-red-800 px-6 py-4 rounded-xl shadow-lg" role="alert">
+                <ul id="error-list" class="list-disc list-inside space-y-1 font-semibold"></ul>
+            </div>
+
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-2xl border-2 border-rose-200">
                 <div class="p-6 text-gray-900">
                     <!-- Информация о складе -->
@@ -27,7 +32,7 @@
                     </div>
 
                     <!-- Форма фильтров -->
-                    <form method="GET" action="{{ route('manager.warehouses.movementHistory', $warehouse) }}" class="mb-6 bg-gradient-to-r from-rose-50 to-pink-50 p-6 rounded-xl border-2 border-rose-200">
+                    <form method="GET" action="{{ route('manager.warehouses.movementHistory', $warehouse) }}" id="movement-history-filter-form" class="mb-6 bg-gradient-to-r from-rose-50 to-pink-50 p-6 rounded-xl border-2 border-rose-200" novalidate>
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                             <!-- Тип перемещения -->
                             <div>
@@ -110,10 +115,6 @@
                             </a>
                         </div>
                     </form>
-
-                    <div class="mb-6 text-sm font-bold text-rose-700">
-                        Найдено: {{ $movements->total() }} перемещений
-                    </div>
 
                     <!-- Таблица истории перемещений -->
                     <div class="overflow-x-auto">
@@ -219,5 +220,107 @@
             </div>
         </div>
     </div>
+
+    <!-- Валидация фильтра дат -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('movement-history-filter-form');
+            const dateFromInput = document.getElementById('date_from');
+            const dateToInput = document.getElementById('date_to');
+            const validationErrors = document.getElementById('validation-errors');
+            const errorList = document.getElementById('error-list');
+
+            // Функция отображения ошибок
+            function showErrors(errors) {
+                errorList.innerHTML = '';
+                errors.forEach(error => {
+                    const li = document.createElement('li');
+                    li.textContent = error;
+                    errorList.appendChild(li);
+                });
+                validationErrors.classList.remove('hidden');
+                
+                // Прокрутка к ошибкам
+                validationErrors.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            // Функция скрытия ошибок
+            function hideErrors() {
+                validationErrors.classList.add('hidden');
+                errorList.innerHTML = '';
+            }
+
+            // Функция валидации дат
+            function validateDates() {
+                const errors = [];
+                const dateFrom = dateFromInput.value;
+                const dateTo = dateToInput.value;
+
+                // Если обе даты заполнены, проверяем их соотношение
+                if (dateFrom && dateTo) {
+                    const dateFromObj = new Date(dateFrom);
+                    const dateToObj = new Date(dateTo);
+
+                    if (dateFromObj > dateToObj) {
+                        errors.push('Дата "от" не может быть больше даты "до"');
+                        dateFromInput.classList.add('border-red-500');
+                        dateToInput.classList.add('border-red-500');
+                    } else {
+                        dateFromInput.classList.remove('border-red-500');
+                        dateToInput.classList.remove('border-red-500');
+                    }
+                }
+
+                return errors;
+            }
+
+            // Обработка отправки формы
+            form.addEventListener('submit', function(e) {
+                const errors = validateDates();
+
+                if (errors.length > 0) {
+                    e.preventDefault();
+                    showErrors(errors);
+                    return false;
+                } else {
+                    hideErrors();
+                }
+            });
+
+            // Валидация при изменении дат
+            dateFromInput.addEventListener('change', function() {
+                const errors = validateDates();
+                if (errors.length > 0) {
+                    showErrors(errors);
+                } else {
+                    hideErrors();
+                }
+            });
+
+            dateToInput.addEventListener('change', function() {
+                const errors = validateDates();
+                if (errors.length > 0) {
+                    showErrors(errors);
+                } else {
+                    hideErrors();
+                }
+            });
+
+            // Очистка ошибок при вводе
+            dateFromInput.addEventListener('input', function() {
+                this.classList.remove('border-red-500');
+                if (errorList.children.length > 0) {
+                    hideErrors();
+                }
+            });
+
+            dateToInput.addEventListener('input', function() {
+                this.classList.remove('border-red-500');
+                if (errorList.children.length > 0) {
+                    hideErrors();
+                }
+            });
+        });
+    </script>
 </x-app-layout>
 

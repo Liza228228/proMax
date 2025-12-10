@@ -18,9 +18,14 @@
                 </div>
             @endif
 
+            <!-- Блок ошибок валидации -->
+            <div id="validation-errors" class="hidden mb-6 bg-gradient-to-r from-red-50 to-rose-50 border-2 border-red-400 text-red-800 px-6 py-4 rounded-xl shadow-lg" role="alert">
+                <ul id="error-list" class="list-disc list-inside space-y-1 font-semibold"></ul>
+            </div>
+
             @if ($errors->any())
                 <div class="mb-6 bg-gradient-to-r from-red-50 to-rose-50 border-2 border-red-400 text-red-800 px-6 py-4 rounded-xl shadow-lg" role="alert">
-                    <div class="font-semibold mb-2">Исправьте следующие ошибки:</div>
+
                     <ul class="list-disc list-inside">
                         @foreach ($errors->all() as $error)
                             <li>{{ $error }}</li>
@@ -32,7 +37,7 @@
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-2xl border-2 border-rose-200">
                 <div class="p-6 text-gray-900">
                     <h3 class="text-lg font-bold text-rose-700 mb-6">Форма перемещения ингредиентов</h3>
-                    <form method="POST" action="{{ route('manager.warehouses.transfer.store', $warehouse) }}" id="transferForm">
+                    <form method="POST" action="{{ route('manager.warehouses.transfer.store', $warehouse) }}" id="transferForm" novalidate>
                         @csrf
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -56,8 +61,7 @@
                                 <x-input-label for="to_warehouse_id" :value="__('Склад-получатель')" />
                                 <select id="to_warehouse_id" 
                                         name="to_warehouse_id"
-                                        class="block mt-1 w-full rounded-xl border-2 border-rose-300 px-4 py-2 shadow-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
-                                        required>
+                                        class="block mt-1 w-full rounded-xl border-2 border-rose-300 px-4 py-2 shadow-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500">
                                     <option value="">Выберите склад-получатель</option>
                                     @foreach($warehouses as $w)
                                         <option value="{{ $w->id }}" {{ old('to_warehouse_id') == $w->id ? 'selected' : '' }}>
@@ -90,7 +94,6 @@
                                 <x-input-label for="expiration_date" :value="__('Срок годности')" />
                                 <select id="expiration_date" 
                                         name="expiration_date"
-                                        required
                                         class="block mt-1 w-full rounded-xl border-2 border-rose-300 px-4 py-2 shadow-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500">
                                     <option value="">Сначала выберите ингредиент</option>
                                 </select>
@@ -102,7 +105,6 @@
                                 <x-input-label for="unit_id" :value="__('Единица измерения')" />
                                 <select id="unit_id" 
                                         name="unit_id"
-                                        required
                                         class="block mt-1 w-full rounded-xl border-2 border-rose-300 px-4 py-2 shadow-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500">
                                     <option value="">Выберите единицу измерения</option>
                                     @foreach($units as $unit)
@@ -118,7 +120,7 @@
                             <!-- Количество -->
                             <div>
                                 <x-input-label for="quantity" :value="__('Количество')" />
-                                <input id="quantity" class="block mt-1 w-full rounded-xl border-2 border-rose-300 px-4 py-2 shadow-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500" type="number" step="0.001" name="quantity" value="{{ old('quantity') }}" required />
+                                <input id="quantity" class="block mt-1 w-full rounded-xl border-2 border-rose-300 px-4 py-2 shadow-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500" type="text" name="quantity" value="{{ old('quantity') }}" />
                                 <x-input-error :messages="$errors->get('quantity')" class="mt-2" />
                             </div>
 
@@ -235,12 +237,6 @@
                                         option.textContent = batch.expiration_date_display;
                                         expirationDateSelect.appendChild(option);
                                     });
-                                    
-                                    // Делаем поле обязательным после выбора ингредиента
-                                    expirationDateSelect.required = true;
-                                } else {
-                                    // Если ингредиент не выбран, делаем поле необязательным
-                                    expirationDateSelect.required = false;
                                 }
                                 
                                 // Очищаем список единиц измерения
@@ -287,6 +283,109 @@
                             
                             unitSelect.addEventListener('change', function() {
                                 updateAvailableQuantity();
+                            });
+
+                            // Кастомная валидация формы
+                            const form = document.getElementById('transferForm');
+                            const validationErrors = document.getElementById('validation-errors');
+                            const errorList = document.getElementById('error-list');
+                            const toWarehouseSelect = document.getElementById('to_warehouse_id');
+
+                            // Функция отображения ошибок
+                            function showErrors(errors) {
+                                errorList.innerHTML = '';
+                                errors.forEach(error => {
+                                    const li = document.createElement('li');
+                                    li.textContent = error;
+                                    errorList.appendChild(li);
+                                });
+                                validationErrors.classList.remove('hidden');
+                                validationErrors.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+
+                            // Функция скрытия ошибок
+                            function hideErrors() {
+                                validationErrors.classList.add('hidden');
+                                errorList.innerHTML = '';
+                            }
+
+                            // Обработка отправки формы
+                            form.addEventListener('submit', function(e) {
+                                const errors = [];
+
+                                // Проверка склада-получателя
+                                if (!toWarehouseSelect.value) {
+                                    errors.push('Выберите склад-получатель');
+                                    toWarehouseSelect.classList.add('border-red-500');
+                                } else {
+                                    toWarehouseSelect.classList.remove('border-red-500');
+                                }
+
+                                // Проверка ингредиента
+                                if (!ingredientSelect.value) {
+                                    errors.push('Выберите ингредиент');
+                                    ingredientSelect.classList.add('border-red-500');
+                                } else {
+                                    ingredientSelect.classList.remove('border-red-500');
+                                }
+
+                                // Проверка срока годности
+                                if (!expirationDateSelect.value && ingredientSelect.value) {
+                                    errors.push('Выберите срок годности');
+                                    expirationDateSelect.classList.add('border-red-500');
+                                } else {
+                                    expirationDateSelect.classList.remove('border-red-500');
+                                }
+
+                                // Проверка единицы измерения
+                                if (!unitSelect.value) {
+                                    errors.push('Выберите единицу измерения');
+                                    unitSelect.classList.add('border-red-500');
+                                } else {
+                                    unitSelect.classList.remove('border-red-500');
+                                }
+
+                                // Проверка количества
+                                const quantityValue = parseFloat(quantityInput.value);
+                                if (!quantityInput.value) {
+                                    errors.push('Укажите количество');
+                                    quantityInput.classList.add('border-red-500');
+                                } else if (isNaN(quantityValue) || quantityValue <= 0) {
+                                    errors.push('Количество должно быть положительным числом');
+                                    quantityInput.classList.add('border-red-500');
+                                } else {
+                                    quantityInput.classList.remove('border-red-500');
+                                }
+
+                                if (errors.length > 0) {
+                                    e.preventDefault();
+                                    showErrors(errors);
+                                    return false;
+                                }
+
+                                hideErrors();
+                            });
+
+                            // Очистка ошибок при изменении полей
+                            [toWarehouseSelect, ingredientSelect, expirationDateSelect, unitSelect, quantityInput].forEach(field => {
+                                field.addEventListener('change', function() {
+                                    this.classList.remove('border-red-500');
+                                    hideErrors();
+                                });
+                            });
+
+                            quantityInput.addEventListener('input', function() {
+                                this.classList.remove('border-red-500');
+                                hideErrors();
+                            });
+
+                            // Запрет ввода некорректных символов в количество
+                            quantityInput.addEventListener('keydown', function(e) {
+                                const allowedKeys = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+                                if (allowedKeys.includes(e.key)) return;
+                                if ((e.ctrlKey || e.metaKey) && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase())) return;
+                                if (e.key === '.' && !this.value.includes('.')) return;
+                                if (!/^[0-9]$/.test(e.key)) e.preventDefault();
                             });
                         });
                     </script>

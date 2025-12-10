@@ -114,10 +114,7 @@
                                             <!-- Информация о самовывозе -->
                                             <div class="mt-3 mb-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-3 border-2 border-blue-200">
                                                 <div class="flex items-start gap-2">
-                                                    <svg class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                                    </svg>
+                                                   
                                                     <div class="flex-1">
                                                         <p class="text-sm font-bold text-blue-800 mb-1">Доступен только самовывоз</p>
                                                         <p class="text-xs text-blue-700">Адрес: г. Иркутск, ул. Ленина, д. 5а</p>

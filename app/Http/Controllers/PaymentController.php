@@ -238,7 +238,7 @@ class PaymentController extends Controller
             $availableQuantity = $product->total_quantity;
             if ($availableQuantity < $orderItem->quantity) {
                 return redirect()->route('profile.edit')->with('error', 
-                    'Товар "' . $product->name_product . '" недоступен в нужном количестве. Доступно: ' . $availableQuantity . ', требуется: ' . $orderItem->quantity);
+                    'Продукция "' . $product->name_product . '" недоступна в нужном количестве. Доступно: ' . $availableQuantity );
             }
         }
 
@@ -369,7 +369,7 @@ class PaymentController extends Controller
                                 
                                 // Перенаправляем в личный кабинет с сообщением об успехе
                                 return redirect()->route('profile.edit')->with('success', 
-                                    'Заказ #' . $order->id . ' успешно оформлен и оплачен! Итоговая сумма: ' . number_format($order->total_amount, 0, '.', ' ') . ' ₽. Заказ доступен только для самовывоза по адресу: г. Иркутск, ул. Ленина, д. 5а');
+                                    'Заказ #' . $order->id . ' успешно оформлен и оплачен. Итоговая сумма: ' . number_format($order->total_amount, 0, '.', ' ') . ' р. Заказ доступен только для самовывоза по адресу: г. Иркутск, ул. Ленина, д. 5а');
                             } catch (\Exception $e) {
                                 DB::rollBack();
                                 \Log::error('Error processing order in success: ' . $e->getMessage());

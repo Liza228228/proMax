@@ -88,103 +88,41 @@ class WarehouseController extends Controller
             });
         }
         
-        // Устанавливаем значения по умолчанию: "Актуальное" и "Раздельно"
-        $dateFilter = $request->input('date_filter', 'with_date');
-        $expirationFilter = $request->input('expiration_filter', 'actual');
+        // Фильтрация по сроку годности (актуальное/просроченное/все)
+        $expirationFilter = $request->input('expiration_filter', 'all');
         
-        // Фильтрация по наличию даты (с датой/без даты)
-        if ($dateFilter === 'with_date') {
-            // С датой: только записи с expiration_date
-            $query->whereNotNull('expiration_date');
-        }
-        // При "Без даты" не фильтруем по дате - просто группируем все записи
-        
-        // Фильтрация по сроку годности (актуальное/просроченное) - применяется всегда
         if ($expirationFilter === 'actual') {
-            // Актуальные: срок годности >= сегодня
+            // Актуальные: срок годности >= сегодня (не NULL и не просрочено)
             $query->where('expiration_date', '>=', Carbon::today());
         } elseif ($expirationFilter === 'expired') {
-            // Просроченные: срок годности < сегодня
-            $query->where('expiration_date', '<', Carbon::today());
+            // Просроченные: срок годности < сегодня (только те, у которых есть дата и она истекла)
+            $query->where('expiration_date', '<', Carbon::today())
+                  ->whereNotNull('expiration_date');
         }
+        // Если 'all' или не передан - показываем все ингредиенты без фильтрации по сроку годности
         
-        // Если фильтр "Без даты", группируем и суммируем одинаковые ингредиенты
-        // При этом применяются фильтры "Актуальное"/"Просроченное", если они выбраны
-        if ($dateFilter === 'without_date') {
-            // Получаем все записи с загруженными связями (с учетом фильтров по сроку годности)
-            $allStocks = $query->with(['ingredient.unitType'])->orderBy('id', 'desc')->get();
+        // Обычная пагинация для всех записей
+        $stockIngredients = $query->orderBy('id', 'desc')->paginate(15)->withQueryString();
+        
+        // Автоматически определяем удобную единицу для каждого ингредиента
+        $stockIngredients->getCollection()->transform(function ($stock) use ($units) {
+            $quantityBase = $stock->quantity; // количество в базовых единицах
             
-            if ($allStocks->isEmpty()) {
-                // Если нет записей, создаем пустую пагинацию
-                $stockIngredients = new \Illuminate\Pagination\LengthAwarePaginator(
-                    collect(),
-                    0,
-                    15,
-                    1,
-                    ['path' => $request->url(), 'query' => $request->query()]
-                );
-            } else {
-                // Группируем по idIngredient и суммируем количество
-                $groupedStocks = $allStocks->groupBy('idIngredient')->map(function ($group) use ($units) {
-                    $firstStock = $group->first();
-                    $totalQuantity = $group->sum('quantity');
-                    
-                    // Автоматически определяем удобную единицу
-                    $ingredientUnitType = $firstStock->ingredient->unitType->name ?? 'Масса';
-                    $displayUnit = $this->getBestDisplayUnit($totalQuantity, $units, $ingredientUnitType);
-                    
-                    $multiplier = $displayUnit->multiplier_to_base ?? 1;
-                    $displayQuantity = $multiplier > 0 ? $totalQuantity / $multiplier : $totalQuantity;
-                    
-                    // Используем существующий объект и изменяем его свойства
-                    $firstStock->quantity = $totalQuantity;
-                    $firstStock->expiration_date = null;
-                    $firstStock->display_quantity = $displayQuantity;
-                    $firstStock->display_unit = $displayUnit;
-                    
-                    return $firstStock;
-                })->values()->sortBy(function($stock) {
-                    return $stock->ingredient->name ?? '';
-                });
-                
-                // Создаем пагинацию вручную для сгруппированных данных
-                $currentPage = $request->get('page', 1);
-                $perPage = 15;
-                $items = $groupedStocks->forPage($currentPage, $perPage);
-                $total = $groupedStocks->count();
-                
-                $stockIngredients = new \Illuminate\Pagination\LengthAwarePaginator(
-                    $items,
-                    $total,
-                    $perPage,
-                    $currentPage,
-                    ['path' => $request->url(), 'query' => $request->query()]
-                );
-            }
-        } else {
-            // Обычная пагинация для записей с датой или без фильтра
-            $stockIngredients = $query->orderBy('id', 'desc')->paginate(15)->withQueryString();
+            // Получаем тип единицы из ингредиента через связь
+            $ingredientUnitType = $stock->ingredient->unitType->name ?? 'Масса';
             
-            // Автоматически определяем удобную единицу для каждого ингредиента
-            $stockIngredients->getCollection()->transform(function ($stock) use ($units) {
-                $quantityBase = $stock->quantity; // количество в базовых единицах
-                
-                // Получаем тип единицы из ингредиента через связь
-                $ingredientUnitType = $stock->ingredient->unitType->name ?? 'Масса';
-                
-                // Автоматически выбираем удобную единицу на основе количества и типа ингредиента
-                $displayUnit = $this->getBestDisplayUnit($quantityBase, $units, $ingredientUnitType);
-                
-                // Пересчитываем количество в выбранную единицу
-                $multiplier = $displayUnit->multiplier_to_base ?? 1;
-                $displayQuantity = $multiplier > 0 ? $quantityBase / $multiplier : $quantityBase;
-                
-                $stock->display_quantity = $displayQuantity;
-                $stock->display_unit = $displayUnit;
-                
-                return $stock;
-            });
-        }
+            // Автоматически выбираем удобную единицу на основе количества и типа ингредиента
+            $displayUnit = $this->getBestDisplayUnit($quantityBase, $units, $ingredientUnitType);
+            
+            // Пересчитываем количество в выбранную единицу
+            $multiplier = $displayUnit->multiplier_to_base ?? 1;
+            $displayQuantity = $multiplier > 0 ? $quantityBase / $multiplier : $quantityBase;
+            
+            $stock->display_quantity = $displayQuantity;
+            $stock->display_unit = $displayUnit;
+            
+            return $stock;
+        });
         
         return view('manager.warehouses.show', compact('warehouse', 'ingredients', 'units', 'stockIngredients'));
     }
@@ -290,6 +228,12 @@ class WarehouseController extends Controller
         if ($warehouse->is_main) {
             return redirect()->route('manager.warehouses.index')
                 ->with('error', 'Нельзя удалить основной склад "Кондитерская".');
+        }
+
+        // Проверка на наличие ингредиентов на складе
+        if ($warehouse->stockIngredients()->exists()) {
+            return redirect()->route('manager.warehouses.index')
+                ->with('error', 'Нельзя удалить склад, на котором есть ингредиенты.');
         }
 
         $warehouse->delete();
@@ -515,7 +459,7 @@ class WarehouseController extends Controller
         
         if ($totalAvailable < $quantityBase) {
             return redirect()->back()
-                ->withErrors(['quantity' => 'Недостаточно ингредиента в выбранной партии. Доступно: ' . number_format($totalAvailable, 0, '.', ' ') . ' г.'])
+                ->withErrors([ 'Недостаточно ингредиента в выбранной партии. ' ])
                 ->withInput();
         }
 

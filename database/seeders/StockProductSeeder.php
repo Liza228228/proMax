@@ -10,9 +10,7 @@ use Carbon\Carbon;
 
 class StockProductSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
+
     public function run(): void
     {
         $products = Product::all();

@@ -19,10 +19,15 @@
                 </div>
             @endif
 
+            <!-- Блок ошибок валидации -->
+            <div id="validation-errors" class="hidden mb-6 bg-gradient-to-r from-red-50 to-rose-50 border-2 border-red-400 text-red-800 px-6 py-4 rounded-xl shadow-lg" role="alert">
+                <ul id="error-list" class="list-disc list-inside space-y-1 font-semibold"></ul>
+            </div>
+
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-2xl border-2 border-rose-200">
                 <div class="p-6 text-gray-900">
                     <!-- Форма поиска и фильтрации -->
-                    <form method="GET" action="{{ route('manager.orders.index') }}" class="mb-6 bg-gradient-to-br from-rose-50 to-pink-50 p-6 rounded-xl border-2 border-rose-200">
+                    <form method="GET" action="{{ route('manager.orders.index') }}" id="orders-filter-form" class="mb-6 bg-gradient-to-br from-rose-50 to-pink-50 p-6 rounded-xl border-2 border-rose-200" novalidate>
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                             <!-- Поиск -->
                             <div class="md:col-span-2">
@@ -83,10 +88,6 @@
                             </a>
                         </div>
                     </form>
-
-                    <div class="mb-6 text-sm font-semibold text-rose-700">
-                        Найдено: {{ $orders->total() }} заказов
-                    </div>
 
                     <!-- Список заказов -->
                     <div class="overflow-x-auto">
@@ -191,7 +192,6 @@
                             <option value="{{ $status }}">{{ $status }}</option>
                         @endforeach
                     </select>
-                    <p class="mt-2 text-xs text-gray-500">Текущий статус будет заменен на выбранный</p>
                 </div>
                 <div class="flex gap-3 justify-end pt-4 border-t border-rose-200">
                     <button type="button" 
@@ -208,6 +208,109 @@
         </div>
     </div>
 
+    <!-- Валидация фильтра дат -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('orders-filter-form');
+            const dateFromInput = document.getElementById('date_from');
+            const dateToInput = document.getElementById('date_to');
+            const validationErrors = document.getElementById('validation-errors');
+            const errorList = document.getElementById('error-list');
+
+            // Функция отображения ошибок
+            function showErrors(errors) {
+                errorList.innerHTML = '';
+                errors.forEach(error => {
+                    const li = document.createElement('li');
+                    li.textContent = error;
+                    errorList.appendChild(li);
+                });
+                validationErrors.classList.remove('hidden');
+                
+                // Прокрутка к ошибкам
+                validationErrors.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            // Функция скрытия ошибок
+            function hideErrors() {
+                validationErrors.classList.add('hidden');
+                errorList.innerHTML = '';
+            }
+
+            // Функция валидации дат
+            function validateDates() {
+                const errors = [];
+                const dateFrom = dateFromInput.value;
+                const dateTo = dateToInput.value;
+
+                // Если обе даты заполнены, проверяем их соотношение
+                if (dateFrom && dateTo) {
+                    const dateFromObj = new Date(dateFrom);
+                    const dateToObj = new Date(dateTo);
+
+                    if (dateFromObj > dateToObj) {
+                        errors.push('Дата "от" не может быть больше даты "до"');
+                        dateFromInput.classList.add('border-red-500');
+                        dateToInput.classList.add('border-red-500');
+                    } else {
+                        dateFromInput.classList.remove('border-red-500');
+                        dateToInput.classList.remove('border-red-500');
+                    }
+                }
+
+                return errors;
+            }
+
+            // Обработка отправки формы
+            form.addEventListener('submit', function(e) {
+                const errors = validateDates();
+
+                if (errors.length > 0) {
+                    e.preventDefault();
+                    showErrors(errors);
+                    return false;
+                } else {
+                    hideErrors();
+                }
+            });
+
+            // Валидация при изменении дат
+            dateFromInput.addEventListener('change', function() {
+                const errors = validateDates();
+                if (errors.length > 0) {
+                    showErrors(errors);
+                } else {
+                    hideErrors();
+                }
+            });
+
+            dateToInput.addEventListener('change', function() {
+                const errors = validateDates();
+                if (errors.length > 0) {
+                    showErrors(errors);
+                } else {
+                    hideErrors();
+                }
+            });
+
+            // Очистка ошибок при вводе
+            dateFromInput.addEventListener('input', function() {
+                this.classList.remove('border-red-500');
+                if (errorList.children.length > 0) {
+                    hideErrors();
+                }
+            });
+
+            dateToInput.addEventListener('input', function() {
+                this.classList.remove('border-red-500');
+                if (errorList.children.length > 0) {
+                    hideErrors();
+                }
+            });
+        });
+    </script>
+
+    <!-- Модальное окно статуса -->
     <script>
         function openStatusModal(orderId, currentStatus) {
             const modal = document.getElementById('statusModal');
@@ -220,21 +323,32 @@
             // Удаляем все опции
             statusSelect.innerHTML = '';
             
-            // Добавляем только доступные статусы (исключаем "Создан" для принятых заказов)
+            // Определяем порядок статусов
+            const statusOrder = {
+                'Создан': 0,
+                'Принят': 1,
+                'Готов к выдаче': 2,
+                'Выполнен': 3
+            };
+            
+            const currentStatusOrder = statusOrder[currentStatus] || 0;
+            
+            // Добавляем только доступные статусы (нельзя вернуться на предыдущие статусы)
             const availableStatuses = @json($statuses);
             availableStatuses.forEach(function(status) {
-                // Если заказ уже принят, не показываем статус "Создан"
-                if (currentStatus !== 'Создан' && status === 'Создан') {
-                    return;
-                }
+                const statusOrderValue = statusOrder[status] || 0;
                 
-                const option = document.createElement('option');
-                option.value = status;
-                option.textContent = status;
-                if (status === currentStatus) {
-                    option.selected = true;
+                // Показываем только текущий статус и следующие за ним
+                // Нельзя вернуться на предыдущие статусы
+                if (statusOrderValue >= currentStatusOrder) {
+                    const option = document.createElement('option');
+                    option.value = status;
+                    option.textContent = status;
+                    if (status === currentStatus) {
+                        option.selected = true;
+                    }
+                    statusSelect.appendChild(option);
                 }
-                statusSelect.appendChild(option);
             });
             
             modal.classList.remove('hidden');

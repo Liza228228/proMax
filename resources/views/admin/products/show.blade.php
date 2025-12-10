@@ -32,10 +32,10 @@
                                         $primaryImage = $product->images->where('is_primary', 1)->first() ?? $product->images->first();
                                         $allImages = $product->images;
                                     @endphp
-                                    <div id="main-image-container" class="w-full aspect-square bg-gradient-to-br from-peach-100 to-rose-100 rounded-xl border-2 border-rose-200 overflow-hidden flex items-center justify-center p-4">
+                                    <div id="main-image-container" class="w-full h-96 bg-gradient-to-br from-peach-100 to-rose-100 rounded-xl border-2 border-rose-200 overflow-hidden flex items-center justify-center p-4">
                                         <img id="main-image" src="{{ asset($primaryImage->path) }}" 
                                              alt="{{ $product->name_product }}" 
-                                             class="max-w-full max-h-full object-contain">
+                                             class="w-full h-full object-contain">
                                     </div>
                                     @if($product->images->count() > 1)
                                         <div class="flex gap-2 mt-3 overflow-x-auto pb-2">
@@ -180,24 +180,43 @@
                     <!-- Текущие запасы -->
                     <div class="bg-white overflow-hidden shadow-xl sm:rounded-2xl border-2 border-rose-200">
                         <div class="p-6 text-gray-900">
-                            <h3 class="text-xl font-bold text-rose-700 mb-6">Текущие запасы</h3>
-                            @php
-                                $stockProducts = $product->stockProducts()
-                                    ->orderBy('expiration_date', 'asc')
-                                    ->orderBy('created_at', 'asc')
-                                    ->get();
-                                
-                                // Группируем по дате срока годности и суммируем количество
-                                $groupedStocks = $stockProducts->groupBy(function($stock) {
-                                    return \Carbon\Carbon::parse($stock->expiration_date)->format('Y-m-d');
-                                })->map(function($group) {
-                                    return [
-                                        'expiration_date' => \Carbon\Carbon::parse($group->first()->expiration_date),
-                                        'quantity' => $group->sum('quantity'),
-                                        'stocks' => $group
-                                    ];
-                                })->sortBy('expiration_date');
-                            @endphp
+                            <div class="mb-6">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="text-xl font-bold text-rose-700">Текущие запасы</h3>
+                                </div>
+                                @php
+                                    $stockProducts = $product->stockProducts()
+                                        ->orderBy('expiration_date', 'asc')
+                                        ->orderBy('created_at', 'asc')
+                                        ->get();
+                                    
+                                    // Группируем по дате срока годности и суммируем количество
+                                    $groupedStocks = $stockProducts->groupBy(function($stock) {
+                                        return \Carbon\Carbon::parse($stock->expiration_date)->format('Y-m-d');
+                                    })->map(function($group) {
+                                        return [
+                                            'expiration_date' => \Carbon\Carbon::parse($group->first()->expiration_date),
+                                            'quantity' => $group->sum('quantity'),
+                                            'stocks' => $group
+                                        ];
+                                    })->sortBy('expiration_date');
+                                @endphp
+                                @if($groupedStocks->count() > 0)
+                                    <div class="flex gap-3 items-center">
+                                        <select id="stock-filter" class="rounded-xl border-2 border-rose-300 px-4 py-2 shadow-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500 bg-white text-gray-900 font-medium transition-all">
+                                            <option value="active">Актуальные</option>
+                                            <option value="all">Все</option>
+                                            <option value="expired">Просроченные</option>
+                                        </select>
+                                        <button type="button" id="apply-filter" class="px-6 py-2 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold rounded-xl shadow-md transition-colors">
+                                            Применить
+                                        </button>
+                                        <button type="button" id="reset-filter" class="px-6 py-2 border-2 border-rose-300 text-rose-700 font-bold rounded-xl hover:bg-rose-50 shadow-sm transition-colors">
+                                            Сбросить
+                                        </button>
+                                    </div>
+                                @endif
+                            </div>
                             @if($groupedStocks->count() > 0)
                                 <div class="overflow-x-auto">
                                     <table class="min-w-full divide-y divide-rose-200">
@@ -214,15 +233,17 @@
                                                 </th>
                                             </tr>
                                         </thead>
-                                        <tbody class="bg-white divide-y divide-rose-200">
-                                            @foreach($groupedStocks as $groupedStock)
+                                        <tbody id="stock-tbody" class="bg-white divide-y divide-rose-200">
+                                            @foreach($groupedStocks as $index => $groupedStock)
                                                 @php
                                                     $expirationDate = $groupedStock['expiration_date'];
                                                     $isExpired = $expirationDate->isPast();
                                                     $daysUntilExpiration = \Carbon\Carbon::today()->diffInDays($expirationDate, false);
                                                     $isExpiringSoon = !$isExpired && $daysUntilExpiration >= 0 && $daysUntilExpiration <= 2;
                                                 @endphp
-                                                <tr class="hover:bg-rose-50 {{ $isExpired ? 'bg-red-50' : ($isExpiringSoon ? 'bg-yellow-50' : '') }}">
+                                                <tr class="stock-row hover:bg-rose-50 {{ $isExpired ? 'bg-red-50 stock-expired' : ($isExpiringSoon ? 'bg-yellow-50 stock-active' : 'stock-active') }}" 
+                                                    data-status="{{ $isExpired ? 'expired' : 'active' }}"
+                                                    data-index="{{ $index }}">
                                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                                         {{ $groupedStock['quantity'] }} шт.
                                                     </td>
@@ -230,7 +251,7 @@
                                                         {{ $expirationDate->format('d.m.Y') }}
                                                         @if($isExpiringSoon)
                                                             <span class="ml-2 inline-block px-2 py-1 text-xs font-bold rounded-full bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-800 border border-yellow-300">
-                                                                ⚠️ Истекает через {{ $daysUntilExpiration }} {{ $daysUntilExpiration == 1 ? 'день' : ($daysUntilExpiration == 2 ? 'дня' : 'дней') }}
+                                                                 Истекает через {{ $daysUntilExpiration }} {{ $daysUntilExpiration == 1 ? 'день' : ($daysUntilExpiration == 2 ? 'дня' : 'дней') }}
                                                             </span>
                                                         @elseif($isExpired)
                                                             <span class="ml-2 inline-block px-2 py-1 text-xs font-bold rounded-full bg-gradient-to-r from-red-100 to-rose-100 text-red-700 border border-red-300">
@@ -258,6 +279,8 @@
                                         </tbody>
                                     </table>
                                 </div>
+                                <!-- Пагинация -->
+                                <div id="pagination-container" class="mt-4 flex justify-center items-center gap-2"></div>
                             @else
                                 <div class="p-8 text-center bg-gradient-to-r from-rose-50 to-pink-50 rounded-xl border-2 border-rose-200">
                                     <p class="text-rose-600 font-semibold">Партии продукции отсутствуют</p>
@@ -266,6 +289,136 @@
                             @endif
                         </div>
                     </div>
+
+                    <!-- JavaScript для фильтрации и пагинации запасов -->
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const filterSelect = document.getElementById('stock-filter');
+                            const applyButton = document.getElementById('apply-filter');
+                            const resetButton = document.getElementById('reset-filter');
+                            const paginationContainer = document.getElementById('pagination-container');
+                            
+                            if (!filterSelect) return;
+                            
+                            const stockRows = Array.from(document.querySelectorAll('.stock-row'));
+                            const itemsPerPage = 5;
+                            let currentFilter = 'active';
+                            let currentPage = 1;
+                            let filteredRows = [];
+                            
+                            // Функция фильтрации
+                            function filterStocks(filterValue) {
+                                currentFilter = filterValue;
+                                currentPage = 1;
+                                
+                                filteredRows = stockRows.filter(row => {
+                                    const status = row.getAttribute('data-status');
+                                    
+                                    if (filterValue === 'all') {
+                                        return true;
+                                    } else if (filterValue === 'expired') {
+                                        return status === 'expired';
+                                    } else if (filterValue === 'active') {
+                                        return status === 'active';
+                                    }
+                                    return false;
+                                });
+                                
+                                displayPage();
+                            }
+                            
+                            // Функция отображения страницы
+                            function displayPage() {
+                                // Скрываем все строки
+                                stockRows.forEach(row => {
+                                    row.style.display = 'none';
+                                });
+                                
+                                // Вычисляем диапазон для текущей страницы
+                                const startIndex = (currentPage - 1) * itemsPerPage;
+                                const endIndex = startIndex + itemsPerPage;
+                                const rowsToShow = filteredRows.slice(startIndex, endIndex);
+                                
+                                // Показываем строки текущей страницы
+                                rowsToShow.forEach(row => {
+                                    row.style.display = '';
+                                });
+                                
+                                // Обновляем пагинацию
+                                updatePagination();
+                            }
+                            
+                            // Функция обновления пагинации
+                            function updatePagination() {
+                                const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
+                                
+                                if (totalPages <= 1) {
+                                    paginationContainer.innerHTML = '';
+                                    return;
+                                }
+                                
+                                let paginationHTML = '';
+                                
+                                // Кнопка "Назад"
+                                if (currentPage > 1) {
+                                    paginationHTML += `
+                                        <button type="button" onclick="goToPage(${currentPage - 1})" 
+                                                class="px-4 py-2 border-2 border-rose-300 text-rose-700 font-bold rounded-xl hover:bg-rose-50 shadow-sm transition-colors">
+                                            ←
+                                        </button>
+                                    `;
+                                }
+                                
+                                // Номера страниц
+                                for (let i = 1; i <= totalPages; i++) {
+                                    if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                                        paginationHTML += `
+                                            <button type="button" onclick="goToPage(${i})" 
+                                                    class="px-4 py-2 ${i === currentPage ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white' : 'border-2 border-rose-300 text-rose-700 hover:bg-rose-50'} font-bold rounded-xl shadow-sm transition-colors">
+                                                ${i}
+                                            </button>
+                                        `;
+                                    } else if (i === currentPage - 2 || i === currentPage + 2) {
+                                        paginationHTML += `<span class="px-2 text-rose-700">...</span>`;
+                                    }
+                                }
+                                
+                                // Кнопка "Вперед"
+                                if (currentPage < totalPages) {
+                                    paginationHTML += `
+                                        <button type="button" onclick="goToPage(${currentPage + 1})" 
+                                                class="px-4 py-2 border-2 border-rose-300 text-rose-700 font-bold rounded-xl hover:bg-rose-50 shadow-sm transition-colors">
+                                            →
+                                        </button>
+                                    `;
+                                }
+                                
+                                paginationContainer.innerHTML = paginationHTML;
+                            }
+                            
+                            // Функция перехода на страницу
+                            window.goToPage = function(page) {
+                                currentPage = page;
+                                displayPage();
+                                // Прокрутка к началу таблицы
+                                document.getElementById('stock-tbody').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            };
+                            
+                            // Обработчик кнопки "Применить"
+                            applyButton.addEventListener('click', function() {
+                                filterStocks(filterSelect.value);
+                            });
+                            
+                            // Обработчик кнопки "Сбросить"
+                            resetButton.addEventListener('click', function() {
+                                filterSelect.value = 'active';
+                                filterStocks('active');
+                            });
+                            
+                            // Инициализация: скрываем просроченные по умолчанию
+                            filterStocks('active');
+                        });
+                    </script>
                 </div>
             </div>
         </div>

@@ -7,6 +7,11 @@
 
     <div class="py-12 bg-gradient-to-br from-rose-50 via-peach-50 to-pink-50 min-h-screen">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <!-- Блок ошибок валидации -->
+            <div id="validation-errors" class="hidden mb-6 bg-gradient-to-r from-red-50 to-rose-50 border-2 border-red-400 text-red-800 px-6 py-4 rounded-xl shadow-lg" role="alert">
+                <ul id="error-list" class="list-disc list-inside space-y-1 font-semibold"></ul>
+            </div>
+
             @if(session('success'))
                 <div class="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-400 text-green-800 px-6 py-4 rounded-xl shadow-lg" role="alert">
                     <span class="block sm:inline font-semibold">{{ session('success') }}</span>
@@ -74,16 +79,16 @@
                                             <!-- Количество -->
                                             <div class="flex items-center gap-3">
                                                 <span class="text-lg font-semibold text-gray-700">Кол-во:</span>
-                                                <form action="{{ route('cart.update', $item) }}" method="POST" class="cart-item-form" data-item-id="{{ $item->id }}">
+                                                <form action="{{ route('cart.update', $item) }}" method="POST" class="cart-item-form" data-item-id="{{ $item->id }}" novalidate>
                                                     @csrf
                                                     @method('PATCH')
-                                                    <input type="number" 
+                                                    <input type="text" 
                                                            name="quantity" 
                                                            value="{{ $item->quantity }}" 
-                                                           min="1" 
-                                                           max="{{ $product->total_quantity }}"
+                                                           data-max="{{ $product->total_quantity }}"
                                                            data-price="{{ $item->price }}"
                                                            data-item-id="{{ $item->id }}"
+                                                           data-product-name="{{ $product->name_product }}"
                                                            class="quantity-input w-20 px-3 py-2 border-2 border-rose-300 rounded-lg text-center text-lg font-bold bg-white text-gray-900 focus:border-rose-500 focus:ring-2 focus:ring-rose-300">
                                                 </form>
                                             </div>
@@ -141,7 +146,7 @@
                                         Оформить заказ
                                     </a>
                                 @else
-                                    <a href="{{ route('login') }}" 
+                                    <a href="{{ route('login', ['redirect' => 'cart']) }}" 
                                        class="flex-1 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white px-8 py-4 rounded-xl font-bold text-center shadow-lg">
                                         Войти для оформления заказа
                                     </a>
@@ -176,11 +181,76 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const quantityInputs = document.querySelectorAll('.quantity-input');
+            const validationErrors = document.getElementById('validation-errors');
+            const errorList = document.getElementById('error-list');
             let updateTimeout;
 
             // Функция для форматирования числа с пробелами
             function formatNumber(num) {
                 return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+            }
+
+            // Функция отображения ошибок
+            function showErrors(errors) {
+                errorList.innerHTML = '';
+                errors.forEach(error => {
+                    const li = document.createElement('li');
+                    li.textContent = error;
+                    errorList.appendChild(li);
+                });
+                validationErrors.classList.remove('hidden');
+                
+                // Прокрутка к ошибкам
+                validationErrors.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            // Функция скрытия ошибок
+            function hideErrors() {
+                validationErrors.classList.add('hidden');
+                errorList.innerHTML = '';
+            }
+
+            // Функция валидации количества
+            function validateQuantity(value, maxQuantity, productName) {
+                if (value === '' || value === null) {
+                    return { 
+                        valid: false, 
+                        error: `Укажите количество для "${productName}"`,
+                        correctedValue: 1
+                    };
+                }
+
+                // Удаляем пробелы
+                value = value.toString().trim();
+
+                // Проверяем формат числа
+                const numericValue = parseInt(value);
+                
+                if (isNaN(numericValue)) {
+                    return { 
+                        valid: false, 
+                        error: `Количество для "${productName}" должно быть числом`,
+                        correctedValue: 1
+                    };
+                }
+
+                if (numericValue < 1) {
+                    return { 
+                        valid: false, 
+                        error: `Количество для "${productName}" не может быть меньше 1`,
+                        correctedValue: 1
+                    };
+                }
+
+                if (numericValue > maxQuantity) {
+                    return { 
+                        valid: false, 
+                        error: `Недостаточно товара на складе для "${productName}". Доступно: ${maxQuantity} шт.`,
+                        correctedValue: maxQuantity
+                    };
+                }
+
+                return { valid: true, value: numericValue };
             }
 
             // Функция для пересчета суммы товара
@@ -211,35 +281,84 @@
 
             // Обработчик изменения количества
             quantityInputs.forEach(input => {
+                // Запрет ввода всего кроме цифр
+                input.addEventListener('keydown', function(e) {
+                    // Разрешаем: Backspace, Delete, Tab, Escape, Enter, стрелки
+                    const allowedKeys = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+                    
+                    // Если нажата служебная клавиша - разрешаем
+                    if (allowedKeys.includes(e.key)) {
+                        return;
+                    }
+                    
+                    // Если нажат Ctrl/Cmd + A, C, V, X - разрешаем (копирование/вставка/выделение)
+                    if ((e.ctrlKey || e.metaKey) && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase())) {
+                        return;
+                    }
+                    
+                    // Проверяем, что это цифра (0-9)
+                    if (!/^[0-9]$/.test(e.key)) {
+                        e.preventDefault();
+                    }
+                });
+
+                input.addEventListener('paste', function(e) {
+                    // Получаем вставляемый текст
+                    const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                    
+                    // Проверяем, что вставляемый текст содержит только цифры
+                    if (!/^\d+$/.test(pastedText)) {
+                        e.preventDefault();
+                    }
+                });
+
                 input.addEventListener('input', function() {
                     const itemId = this.getAttribute('data-item-id');
                     const price = parseFloat(this.getAttribute('data-price'));
-                    const quantity = parseInt(this.value) || 0;
+                    let quantity = parseInt(this.value) || 0;
+                    
+                    // Если введен 0, автоматически заменяем на 1
+                    if (this.value !== '' && quantity === 0) {
+                        this.value = 1;
+                        quantity = 1;
+                    }
                     
                     // Обновляем сумму товара
                     updateItemTotal(itemId, quantity, price);
                     
                     // Обновляем общую сумму
                     updateCartTotal();
+
+                    // Очищаем ошибки при вводе
+                    this.classList.remove('border-red-500');
+                    hideErrors();
                 });
 
                 // Автоматическое обновление на сервере через AJAX с задержкой
                 input.addEventListener('change', function() {
                     const form = this.closest('.cart-item-form');
                     const itemId = this.getAttribute('data-item-id');
-                    const quantity = parseInt(this.value) || 1;
-                    const maxQuantity = parseInt(this.getAttribute('max')) || 999;
+                    let quantity = this.value;
+                    const maxQuantity = parseInt(this.getAttribute('data-max')) || 999;
+                    const productName = this.getAttribute('data-product-name');
                     
-                    // Проверяем валидность значения
-                    if (quantity < 1) {
+                    // Если введен 0 или пустое значение, автоматически ставим 1 без ошибки
+                    if (quantity === '' || quantity === '0' || parseInt(quantity) === 0) {
                         this.value = 1;
+                        quantity = '1';
                         updateCartTotal();
-                        return;
+                        this.classList.remove('border-red-500');
+                        hideErrors();
                     }
-                    if (quantity > maxQuantity) {
-                        this.value = maxQuantity;
+                    
+                    // Валидация количества (для проверки максимума и формата)
+                    const validation = validateQuantity(quantity, maxQuantity, productName);
+                    
+                    if (!validation.valid) {
+                        this.value = validation.correctedValue;
                         updateCartTotal();
-                        alert('Недостаточно товара на складе. Доступно: ' + maxQuantity);
+                        this.classList.add('border-red-500');
+                        showErrors([validation.error]);
                         return;
                     }
 
@@ -275,12 +394,13 @@
                                         cartTotalElement.textContent = formatNumber(Math.round(data.cart_total)) + ' ₽';
                                     }
                                 }
+                                hideErrors();
                             })
                             .catch(error => {
                                 console.error('Ошибка:', error);
                                 // В случае ошибки показываем сообщение пользователю
                                 if (error.message) {
-                                    alert(error.message);
+                                    showErrors([error.message]);
                                 }
                             });
                         }

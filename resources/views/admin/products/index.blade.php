@@ -69,10 +69,7 @@
                         </div>
                     </form>
 
-                    <div class="mb-6 flex justify-between items-center">
-                        <div class="text-sm font-semibold text-rose-700">
-                            Найдено: {{ $products->total() }} продуктов
-                        </div>
+                    <div class="mb-6 flex justify-end">
                         <a href="{{ route('admin.products.create') }}" class="inline-flex items-center gap-2 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold px-6 py-2.5 rounded-xl shadow-md">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
@@ -203,7 +200,7 @@
                                                 $daysLeft = $product->getDaysUntilExpiration();
                                             @endphp
                                             <span class="px-3 py-1 text-xs font-bold rounded-full bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-800 border-2 border-yellow-300">
-                                                ⚠️ Истекает через {{ $daysLeft }} {{ $daysLeft == 1 ? 'день' : ($daysLeft == 2 ? 'дня' : 'дней') }}
+                                                 Истекает через {{ $daysLeft }} {{ $daysLeft == 1 ? 'день' : ($daysLeft == 2 ? 'дня' : 'дней') }}
                                             </span>
                                         @endif
                                     </div>

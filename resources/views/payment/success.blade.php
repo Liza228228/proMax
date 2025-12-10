@@ -35,12 +35,10 @@
                     <div class="bg-gradient-to-r from-rose-50 to-pink-50 rounded-xl p-6 mb-6 border-2 border-rose-300">
                         <div class="flex items-start gap-3">
                             <div class="flex-shrink-0 mt-1">
-                                <svg class="w-6 h-6 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
+                                
                             </div>
                             <div class="flex-1">
-                                <h4 class="text-lg font-bold text-rose-800 mb-2">Оплата заказа</h4>
+                               
                                 <p class="text-rose-700 font-medium mb-3">
                                     Вы можете оплатить заказ в разделе <strong>"Мои заказы"</strong> в личном кабинете.
                                 </p>
@@ -63,9 +61,7 @@
                         </a>
                     </div>
                     
-                    <div class="mt-6 text-center text-sm text-rose-600 font-medium">
-                        Время: {{ now()->format('d.m.Y H:i:s') }}
-                    </div>
+                    
                 </div>
             </div>
         </div>

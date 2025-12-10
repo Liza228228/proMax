@@ -15,8 +15,25 @@ class AuthenticatedSessionController extends Controller
     /**
      * Display the login view.
      */
-    public function create(): View
+    public function create(Request $request): View
     {
+        // Если передан параметр redirect, сохраняем его в сессии
+        if ($request->has('redirect')) {
+            $redirectParam = $request->get('redirect');
+            
+            // Определяем URL для редиректа в зависимости от параметра
+            $redirectUrl = match($redirectParam) {
+                'cart' => route('cart.index'),
+                'checkout' => route('cart.checkout'),
+                default => null
+            };
+            
+            // Сохраняем URL в сессии, если он определен
+            if ($redirectUrl) {
+                session()->put('url.intended', $redirectUrl);
+            }
+        }
+        
         return view('auth.login');
     }
 

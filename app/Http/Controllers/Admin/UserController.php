@@ -121,6 +121,13 @@ class UserController extends Controller
     public function edit(User $user): View
     {
         $currentUser = Auth::user();
+        
+        // Запрет редактирования обычных пользователей (роль 1)
+        if ($user->role == 1) {
+            return redirect()->route('admin.users.index')
+                ->with('error', 'Нельзя редактировать данные обычных пользователей.');
+        }
+        
         return view('admin.users.edit', compact('user', 'currentUser'));
     }
 
@@ -130,6 +137,12 @@ class UserController extends Controller
     public function update(Request $request, User $user): RedirectResponse
     {
         $currentUser = Auth::user();
+        
+        // Запрет редактирования обычных пользователей (роль 1)
+        if ($user->role == 1) {
+            return redirect()->route('admin.users.index')
+                ->with('error', 'Нельзя редактировать данные обычных пользователей.');
+        }
         
         // Проверка: нельзя изменять роль администраторам (себе и другим)
         if ($user->role == 2 || ($currentUser && $currentUser->id == $user->id && $currentUser->role == 2)) {

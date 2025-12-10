@@ -16,8 +16,25 @@ use Illuminate\View\View;
 class RegisteredUserController extends Controller
 {
 
-    public function create(): View
+    public function create(Request $request): View
     {
+        // Если передан параметр redirect, сохраняем его в сессии
+        if ($request->has('redirect')) {
+            $redirectParam = $request->get('redirect');
+            
+            // Определяем URL для редиректа в зависимости от параметра
+            $redirectUrl = match($redirectParam) {
+                'cart' => route('cart.index'),
+                'checkout' => route('cart.checkout'),
+                default => null
+            };
+            
+            // Сохраняем URL в сессии, если он определен
+            if ($redirectUrl) {
+                session()->put('url.intended', $redirectUrl);
+            }
+        }
+        
         return view('auth.register');
     }
     public function store(Request $request): RedirectResponse
@@ -85,7 +102,7 @@ class RegisteredUserController extends Controller
             }
         }
 
-        // Всех пользователей перенаправляем на главную страницу
-        return redirect(route('index', absolute: false));
+        // Перенаправляем пользователя на страницу, с которой он пришел, или на главную по умолчанию
+        return redirect()->intended(route('index', absolute: false));
     }
 }

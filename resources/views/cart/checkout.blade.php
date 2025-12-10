@@ -89,9 +89,7 @@
                         <div class="mt-8 mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border-2 border-blue-300">
                             <div class="flex items-start gap-3">
                                 <div class="flex-shrink-0 mt-1">
-                                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
+                                   
                                 </div>
                                 <div>
                                     <h4 class="text-lg font-bold text-blue-800 mb-2">Информация о доставке</h4>

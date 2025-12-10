@@ -9,9 +9,7 @@ use App\Models\UnitType;
 
 class UnitSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
+
     public function run(): void
     {
         // Получаем типы единиц измерения

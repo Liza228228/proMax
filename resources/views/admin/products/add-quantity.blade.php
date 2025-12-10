@@ -20,7 +20,7 @@
 
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-2xl border-2 border-rose-200">
                 <div class="p-6 text-gray-900">
-                    <form method="POST" action="{{ route('admin.products.addQuantity.store', $product) }}" id="addQuantityForm">
+                    <form method="POST" action="{{ route('admin.products.addQuantity.store', $product) }}" id="addQuantityForm" novalidate>
                         @csrf
 
                         <!-- Информация о продукте -->
@@ -39,14 +39,12 @@
                             <x-input-label for="quantity" :value="__('Количество для добавления (шт.)')" class="text-rose-700 font-bold" />
                             <x-text-input id="quantity" 
                                          class="block mt-1 w-full rounded-xl border-2 border-rose-300 px-4 py-2 shadow-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500" 
-                                         type="number" 
+                                         type="text" 
                                          name="quantity" 
                                          :value="old('quantity')" 
-                                         min="1"
-                                         step="1"
-                                         required 
                                          autofocus
                                          oninput="updateIngredientsCalculation()" />
+                            <div id="quantity_error" class="hidden mt-2 text-sm text-red-600 font-semibold"></div>
                             <x-input-error :messages="$errors->get('quantity')" class="mt-2" />
                         </div>
 
@@ -165,6 +163,80 @@
         // Инициализация при загрузке страницы
         document.addEventListener('DOMContentLoaded', function() {
             updateIngredientsCalculation();
+            
+            // Кастомная валидация формы
+            const form = document.getElementById('addQuantityForm');
+            const quantityInput = document.getElementById('quantity');
+            const quantityError = document.getElementById('quantity_error');
+            
+            // Функция показа ошибки
+            function showError(message) {
+                quantityError.textContent = message;
+                quantityError.classList.remove('hidden');
+                quantityInput.classList.add('border-red-500');
+            }
+            
+            // Функция скрытия ошибки
+            function hideError() {
+                quantityError.classList.add('hidden');
+                quantityError.textContent = '';
+                quantityInput.classList.remove('border-red-500');
+            }
+            
+            // Обработка отправки формы
+            form.addEventListener('submit', function(e) {
+                const quantity = quantityInput.value.trim();
+                
+                // Проверка на пустое значение
+                if (!quantity) {
+                    e.preventDefault();
+                    showError('Поле "Количество для добавления" обязательно для заполнения');
+                    quantityInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return false;
+                }
+                
+                // Проверка на число
+                const numValue = parseInt(quantity);
+                if (isNaN(numValue) || !Number.isInteger(parseFloat(quantity))) {
+                    e.preventDefault();
+                    showError('Количество должно быть целым числом');
+                    quantityInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return false;
+                }
+                
+                // Проверка на минимальное значение
+                if (numValue < 1) {
+                    e.preventDefault();
+                    showError('Количество должно быть не менее 1');
+                    quantityInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return false;
+                }
+                
+                hideError();
+            });
+            
+            // Очистка ошибок при вводе
+            quantityInput.addEventListener('input', function() {
+                hideError();
+            });
+            
+            // Запрет ввода недопустимых символов
+            quantityInput.addEventListener('keydown', function(e) {
+                const allowedKeys = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+                if (allowedKeys.includes(e.key)) return;
+                if ((e.ctrlKey || e.metaKey) && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase())) return;
+                if (!/^[0-9]$/.test(e.key)) {
+                    e.preventDefault();
+                }
+            });
+            
+            // Запрет вставки недопустимых значений
+            quantityInput.addEventListener('paste', function(e) {
+                const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                if (!/^\d+$/.test(pastedText) || pastedText.includes('-') || pastedText.includes('.')) {
+                    e.preventDefault();
+                }
+            });
         });
     </script>
 </x-app-layout>

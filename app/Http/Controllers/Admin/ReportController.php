@@ -51,9 +51,12 @@ class ReportController extends Controller
             ->get();
 
         // Статистика
+        // Общая выручка считается только по статусам: Принят, Готов к выдаче, Выполнен (исключая Создан)
+        $revenueOrders = $orders->whereIn('status', ['Принят', 'Готов к выдаче', 'Выполнен']);
+        
         $stats = [
             'total_orders' => $orders->count(),
-            'total_revenue' => $orders->sum('total_amount'),
+            'total_revenue' => $revenueOrders->sum('total_amount'),
             'completed_orders' => $orders->where('status', 'Выполнен')->count(),
         ];
         
@@ -97,24 +100,27 @@ class ReportController extends Controller
         // Устанавливаем часовой пояс для всех дат
         Carbon::setLocale('ru');
 
-        // Общая выручка только с принятых заказов
+        // Общая выручка с заказов со статусами: Принят, Готов к выдаче, Выполнен
         $totalRevenue = Order::whereBetween('order_date', [$dateFrom, $dateTo])
-            ->where('status', 'Принят')
+            ->whereIn('status', ['Принят', 'Готов к выдаче', 'Выполнен'])
             ->sum('total_amount');
 
-        // Выручка по дням только с принятых заказов
+        // Выручка по дням с заказов со статусами: Принят, Готов к выдаче, Выполнен
         $revenueByDay = Order::whereBetween('order_date', [$dateFrom, $dateTo])
-            ->where('status', 'Принят')
+            ->whereIn('status', ['Принят', 'Готов к выдаче', 'Выполнен'])
             ->select(DB::raw('DATE(order_date) as date'), DB::raw('SUM(total_amount) as revenue'), DB::raw('COUNT(*) as orders_count'))
             ->groupBy('date')
             ->orderBy('date')
             ->get();
 
+        // Количество заказов со статусами: Принят, Готов к выдаче, Выполнен
+        $totalOrders = Order::whereBetween('order_date', [$dateFrom, $dateTo])
+            ->whereIn('status', ['Принят', 'Готов к выдаче', 'Выполнен'])
+            ->count();
+
         $stats = [
             'total_revenue' => $totalRevenue,
-            'total_orders' => Order::whereBetween('order_date', [$dateFrom, $dateTo])
-                ->where('status', 'Принят')
-                ->count(),
+            'total_orders' => $totalOrders,
         ];
 
         $pdf = PDF::loadView('admin.reports.finance-pdf', [
