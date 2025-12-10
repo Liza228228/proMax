@@ -38,32 +38,32 @@
                             @endphp
                             
                             @if($allImages->count() > 0 && isset($primaryImage))
-                                <!-- Главное квадратное изображение -->
+                                <!-- Главное изображение на всю ширину -->
                                 <div class="mb-6">
-                                    <div class="w-full aspect-square bg-gradient-to-br from-peach-100 to-rose-100 rounded-2xl border-2 border-rose-200 flex items-center justify-center p-8 shadow-lg">
+                                    <div class="w-full bg-gradient-to-br from-peach-100 to-rose-100 rounded-2xl border-2 border-rose-200 overflow-hidden shadow-lg">
                                         <img src="{{ asset($primaryImage->path) }}" 
                                              alt="{{ $product->name_product }}" 
-                                             class="max-w-full max-h-full w-auto h-auto object-contain">
+                                             class="w-full h-96 object-cover">
                                     </div>
                                 </div>
                                 
-                                <!-- Квадратные миниатюры -->
+                                <!-- Миниатюры на всю ширину -->
                                 @if($allImages->count() > 1)
                                     <div class="flex gap-3 overflow-x-auto pb-2">
                                         @foreach($allImages as $index => $img)
                                             <a href="{{ route('catalog.show', ['product' => $product, 'image' => $img->id]) }}" 
-                                               class="flex-shrink-0">
-                                                <div class="w-20 h-20 bg-gradient-to-br from-peach-100 to-rose-100 rounded-xl border-2 {{ isset($primaryImage) && $img->id == $primaryImage->id ? 'border-rose-500 shadow-lg' : 'border-rose-200 hover:border-rose-400' }} flex items-center justify-center p-2 shadow-md">
+                                               class="flex-shrink-0 w-full max-w-[120px]">
+                                                <div class="w-full h-24 bg-gradient-to-br from-peach-100 to-rose-100 rounded-xl border-2 {{ isset($primaryImage) && $img->id == $primaryImage->id ? 'border-rose-500 shadow-lg' : 'border-rose-200 hover:border-rose-400' }} overflow-hidden shadow-md">
                                                     <img src="{{ asset($img->path) }}" 
                                                          alt="{{ $product->name_product }}" 
-                                                         class="max-w-full max-h-full w-auto h-auto object-contain">
+                                                         class="w-full h-full object-cover">
                                                 </div>
                                             </a>
                                         @endforeach
                                     </div>
                                 @endif
                             @else
-                                <div class="w-full aspect-square bg-gradient-to-br from-peach-100 to-rose-100 rounded-2xl border-2 border-rose-200 flex items-center justify-center shadow-lg">
+                                <div class="w-full h-96 bg-gradient-to-br from-peach-100 to-rose-100 rounded-2xl border-2 border-rose-200 flex items-center justify-center shadow-lg">
                                     <svg class="w-24 h-24 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                     </svg>
