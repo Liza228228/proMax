@@ -24,7 +24,8 @@
         <!-- Phone -->
         <div class="mt-4">
             <x-input-label for="phone" :value="__('Телефон')" />
-            <x-text-input id="phone" class="block mt-1 w-full" type="tel" name="phone" :value="old('phone')" autocomplete="tel" placeholder="+7 (___) ___-__-__" />
+            <x-text-input id="phone" class="block mt-1 w-full" type="tel" name="phone" :value="old('phone')" autocomplete="tel" placeholder="+7 (___) ___-__-__" style="font-family: monospace;" />
+            <div id="phone-error" class="hidden mt-2 text-sm text-red-600"></div>
             <x-input-error :messages="$errors->get('phone')" class="mt-2" />
         </div>
 
@@ -161,10 +162,11 @@
 
                 // Проверка телефона
                 const phonePattern = /^\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}$/;
-                if (!phoneInput.value.trim()) {
+                const phone = phoneInput.value.trim();
+                if (!phone) {
                     errors.push('Поле "Телефон" обязательно для заполнения');
                     phoneInput.classList.add('border-red-500');
-                } else if (!phonePattern.test(phoneInput.value)) {
+                } else if (!phonePattern.test(phone)) {
                     errors.push('Телефон должен быть в формате +7 (XXX) XXX-XX-XX');
                     phoneInput.classList.add('border-red-500');
                 } else {

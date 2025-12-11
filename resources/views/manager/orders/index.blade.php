@@ -101,6 +101,9 @@
                                         Дата заказа
                                     </th>
                                     <th class="px-6 py-3 text-left text-xs font-bold text-rose-700 uppercase tracking-wider">
+                                        Состав заказа
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-bold text-rose-700 uppercase tracking-wider">
                                         Сумма
                                     </th>
                                     <th class="px-6 py-3 text-left text-xs font-bold text-rose-700 uppercase tracking-wider">
@@ -121,6 +124,20 @@
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                                             {{ $order->order_date->format('d.m.Y H:i') }}
+                                        </td>
+                                        <td class="px-6 py-4 text-sm text-gray-700">
+                                            @if($order->items && $order->items->count() > 0)
+                                                <div class="space-y-1">
+                                                    @foreach($order->items as $item)
+                                                        <div class="flex items-center justify-between">
+                                                            <span class="text-gray-900">{{ $item->product->name_product ?? 'Товар удален' }}</span>
+                                                            <span class="text-gray-600 ml-2">x{{ $item->quantity }}</span>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            @else
+                                                <span class="text-gray-400 italic">Товары отсутствуют</span>
+                                            @endif
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-bold bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent">
                                             {{ number_format($order->total_amount, 2, '.', ' ') }} ₽
@@ -148,7 +165,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="5" class="px-6 py-4 text-center text-sm text-rose-600 font-semibold">
+                                        <td colspan="6" class="px-6 py-4 text-center text-sm text-rose-600 font-semibold">
                                             Заказы не найдены
                                         </td>
                                     </tr>
@@ -174,7 +191,7 @@
     </div>
 
     <!-- Модальное окно для изменения статуса -->
-    <div id="statusModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center backdrop-blur-sm">
+    <div id="statusModal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
         <div class="bg-white overflow-hidden shadow-2xl sm:rounded-2xl border-2 border-rose-200 max-w-md w-full mx-4 transform transition-all">
             <div class="bg-gradient-to-r from-rose-500 to-pink-500 px-6 py-4">
                 <h3 class="text-xl font-bold text-white">Изменить статус заказа</h3>

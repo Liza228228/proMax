@@ -22,6 +22,7 @@
                         <div>
                             <x-input-label for="name" :value="__('Название склада')" />
                             <input id="name" class="block mt-1 w-full rounded-xl border-2 border-rose-300 px-4 py-2 shadow-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500" type="text" name="name" value="{{ old('name', $warehouse->name) }}" autofocus />
+                            <div id="name-error" class="mt-2 text-sm text-red-600 hidden"></div>
                             <x-input-error :messages="$errors->get('name')" class="mt-2" />
                         </div>
 
@@ -64,11 +65,14 @@
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('warehouse-edit-form');
             const nameInput = document.getElementById('name');
+            const nameError = document.getElementById('name-error');
             const cityInput = document.getElementById('city');
             const streetInput = document.getElementById('street');
             const houseInput = document.getElementById('house');
             const validationErrors = document.getElementById('validation-errors');
             const errorList = document.getElementById('error-list');
+            const warehouseId = {{ $warehouse->id }};
+            let nameCheckTimeout;
 
             // Функция отображения ошибок
             function showErrors(errors) {
@@ -88,15 +92,55 @@
                 errorList.innerHTML = '';
             }
 
+            // Проверка уникальности названия склада при вводе
+            nameInput.addEventListener('input', function() {
+                const name = this.value.trim();
+                
+                clearTimeout(nameCheckTimeout);
+                
+                nameError.classList.add('hidden');
+                nameError.textContent = '';
+                nameInput.classList.remove('border-red-500');
+                nameInput.classList.add('border-rose-300');
+
+                if (name.length === 0) {
+                    return;
+                }
+
+                nameCheckTimeout = setTimeout(function() {
+                    fetch('{{ route("manager.warehouses.checkName") }}?name=' + encodeURIComponent(name) + '&warehouse_id=' + warehouseId, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.exists) {
+                            nameError.textContent = 'Склад с таким названием уже существует.';
+                            nameError.classList.remove('hidden');
+                            nameInput.classList.remove('border-rose-300');
+                            nameInput.classList.add('border-red-500');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Ошибка при проверке названия:', error);
+                    });
+                }, 500);
+            });
+
             // Обработка отправки формы
             form.addEventListener('submit', function(e) {
+                e.preventDefault();
                 const errors = [];
                 
                 // Проверка названия
-                if (!nameInput.value.trim()) {
+                const name = nameInput.value.trim();
+                if (!name) {
                     errors.push('Поле "Название склада" обязательно для заполнения');
                     nameInput.classList.add('border-red-500');
-                } else if (nameInput.value.trim().length > 100) {
+                } else if (name.length > 100) {
                     errors.push('Поле "Название склада" не должно превышать 100 символов');
                     nameInput.classList.add('border-red-500');
                 } else {
@@ -141,8 +185,35 @@
                     showErrors(errors);
                     return false;
                 }
-                
-                hideErrors();
+
+                // Если все синхронные проверки прошли, проверяем уникальность названия
+                if (name) {
+                    fetch('{{ route("manager.warehouses.checkName") }}?name=' + encodeURIComponent(name) + '&warehouse_id=' + warehouseId, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.exists) {
+                            nameError.textContent = 'Склад с таким названием уже существует.';
+                            nameError.classList.remove('hidden');
+                            nameInput.classList.remove('border-rose-300');
+                            nameInput.classList.add('border-red-500');
+                            nameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        } else {
+                            form.submit();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Ошибка при проверке названия:', error);
+                        form.submit();
+                    });
+                } else {
+                    form.submit();
+                }
             });
 
             // Очистка ошибок при вводе

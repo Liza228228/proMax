@@ -89,6 +89,9 @@
                                     <tr class="hover:bg-rose-50">
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                             {{ $category->name_category }}
+                                            <span class="ml-2 inline-block px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 border border-blue-300">
+                                                {{ $category->products_count }} {{ $category->products_count == 1 ? 'продукт' : ($category->products_count < 5 ? 'продукта' : 'продуктов') }}
+                                            </span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm">
                                             @if ($category->available)

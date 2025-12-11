@@ -76,6 +76,11 @@
                                     <tr class="hover:bg-rose-50">
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                             {{ $ingredient->name }}
+                                            @if($ingredient->recepts_count > 0)
+                                                <span class="ml-2 inline-block px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 border border-blue-300">
+                                                    Используется в {{ $ingredient->recepts_count }} {{ $ingredient->recepts_count == 1 ? 'рецепте' : 'рецептах' }}
+                                                </span>
+                                            @endif
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <a href="{{ route('manager.ingredients.edit', $ingredient) }}"

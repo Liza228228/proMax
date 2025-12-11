@@ -65,6 +65,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/', [ProductController::class, 'index'])->name('index');
         Route::get('/create', [ProductController::class, 'create'])->name('create');
         Route::post('/', [ProductController::class, 'store'])->name('store');
+        Route::get('/check-name', [ProductController::class, 'checkName'])->name('checkName');
         Route::get('/{product}', [ProductController::class, 'show'])->name('show');
         Route::get('/{product}/add-quantity', [ProductController::class, 'showAddQuantity'])->name('addQuantity');
         Route::post('/{product}/add-quantity', [ProductController::class, 'addQuantity'])->name('addQuantity.store');
@@ -109,6 +110,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/', [WarehouseController::class, 'index'])->name('index');
         Route::get('/create', [WarehouseController::class, 'create'])->name('create');
         Route::post('/', [WarehouseController::class, 'store'])->name('store');
+        Route::get('/check-name', [WarehouseController::class, 'checkName'])->name('checkName');
         Route::get('/{warehouse}', [WarehouseController::class, 'show'])->name('show');
         Route::get('/{warehouse}/movement-history', [WarehouseController::class, 'movementHistory'])->name('movementHistory');
         Route::get('/{warehouse}/edit', [WarehouseController::class, 'edit'])->name('edit');
@@ -124,6 +126,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/', [\App\Http\Controllers\Manager\IngredientController::class, 'index'])->name('index');
         Route::get('/create', [\App\Http\Controllers\Manager\IngredientController::class, 'create'])->name('create');
         Route::post('/', [\App\Http\Controllers\Manager\IngredientController::class, 'store'])->name('store');
+        Route::get('/check-name', [\App\Http\Controllers\Manager\IngredientController::class, 'checkName'])->name('checkName');
         Route::get('/{ingredient}/edit', [\App\Http\Controllers\Manager\IngredientController::class, 'edit'])->name('edit');
         Route::patch('/{ingredient}', [\App\Http\Controllers\Manager\IngredientController::class, 'update'])->name('update');
         Route::delete('/{ingredient}', [\App\Http\Controllers\Manager\IngredientController::class, 'destroy'])->name('destroy');

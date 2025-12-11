@@ -48,6 +48,14 @@ class Ingredient extends Model
     {
         return $this->hasMany(StockIngredient::class, 'idIngredient');
     }
+
+    /**
+     * Получить рецепты, в которых используется ингредиент
+     */
+    public function recepts()
+    {
+        return $this->hasMany(Recept::class, 'idIngredient');
+    }
 }
 
 

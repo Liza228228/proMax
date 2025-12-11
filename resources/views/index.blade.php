@@ -35,9 +35,7 @@
                         <h2 class="text-3xl font-bold mb-3 bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent">
                             Новинки
                         </h2>
-                        <p class="text-gray-600 text-lg">
-                            Попробуйте наши свежие кондитерские изделия
-                        </p>
+                      
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">

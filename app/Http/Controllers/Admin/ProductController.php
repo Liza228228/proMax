@@ -101,7 +101,7 @@ class ProductController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'name_product' => ['required', 'string', 'max:100'],
+            'name_product' => ['required', 'string', 'max:100', 'unique:products,name_product'],
             'description' => ['nullable', 'string'],
             'weight' => ['nullable', 'numeric', 'min:0', 'max:999.99'],
             'price' => ['required', 'numeric', 'min:0'],
@@ -118,6 +118,7 @@ class ProductController extends Controller
             'name_product.required' => 'Поле "Название товара" обязательно для заполнения.',
             'name_product.string' => 'Поле "Название товара" должно быть строкой.',
             'name_product.max' => 'Поле "Название товара" не должно превышать 100 символов.',
+            'name_product.unique' => 'Продукт с таким названием уже существует.',
             'description.string' => 'Поле "Описание" должно быть строкой.',
             'weight.numeric' => 'Поле "Вес" должно быть числом.',
             'weight.min' => 'Вес не может быть отрицательным.',
@@ -210,6 +211,11 @@ class ProductController extends Controller
      */
     public function show(Product $product): View
     {
+        // Удаляем партии с количеством 0
+        StockProduct::where('id_product', $product->id)
+            ->where('quantity', '<=', 0)
+            ->delete();
+        
         $product->load(['category', 'images', 'recepts.ingredient.unitType', 'stockProducts']);
         $units = Unit::with('unitType')->orderBy('name')->get();
         
@@ -286,7 +292,7 @@ class ProductController extends Controller
     public function update(Request $request, Product $product): RedirectResponse
     {
         $request->validate([
-            'name_product' => ['required', 'string', 'max:100'],
+            'name_product' => ['required', 'string', 'max:100', 'unique:products,name_product,' . $product->id],
             'description' => ['nullable', 'string'],
             'weight' => ['nullable', 'numeric', 'min:0', 'max:999.99'],
             'price' => ['required', 'numeric', 'min:0'],
@@ -305,6 +311,7 @@ class ProductController extends Controller
             'name_product.required' => 'Поле "Название товара" обязательно для заполнения.',
             'name_product.string' => 'Поле "Название товара" должно быть строкой.',
             'name_product.max' => 'Поле "Название товара" не должно превышать 100 символов.',
+            'name_product.unique' => 'Продукт с таким названием уже существует.',
             'description.string' => 'Поле "Описание" должно быть строкой.',
             'weight.numeric' => 'Поле "Вес" должно быть числом.',
             'weight.min' => 'Вес не может быть отрицательным.',
@@ -522,7 +529,7 @@ class ProductController extends Controller
 
                 if ($totalAvailable < $totalNeeded) {
                     $ingredient = Ingredient::find($ingredientId);
-                    throw new \Exception("Недостаточно актуального ингредиента '{$ingredient->name}' на складе '{$mainWarehouse->name}'. Требуется: {$totalNeeded}, доступно: {$totalAvailable}");
+                    throw new \Exception("Недостаточно ингредиента '{$ingredient->name}' на складе '{$mainWarehouse->name}'. Требуется: {$totalNeeded}, доступно: {$totalAvailable}");
                 }
 
                 // Списываем ингредиент с основного склада по принципу FIFO (сначала ближайший срок годности)
@@ -707,6 +714,29 @@ class ProductController extends Controller
         }
         
         return $baseUnit;
+    }
+
+    /**
+     * Check if product name already exists (for AJAX validation).
+     */
+    public function checkName(Request $request)
+    {
+        $name = $request->input('name_product');
+        $productId = $request->input('product_id'); // For edit form
+        
+        if (empty($name)) {
+            return response()->json(['exists' => false]);
+        }
+
+        $query = Product::where('name_product', $name);
+        
+        if ($productId) {
+            $query->where('id', '!=', $productId);
+        }
+        
+        $exists = $query->exists();
+
+        return response()->json(['exists' => $exists]);
     }
 }
 

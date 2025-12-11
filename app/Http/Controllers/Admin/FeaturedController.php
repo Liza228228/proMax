@@ -64,7 +64,7 @@ class FeaturedController extends Controller
             Cache::forever('featured_products', $featuredIds);
         }
         
-        return redirect()->back()->with('success', 'Товар добавлен в новинки');
+        return redirect()->back()->with('success', 'Продукция добавлена в новинки');
     }
     
     /**

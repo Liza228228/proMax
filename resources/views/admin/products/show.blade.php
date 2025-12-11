@@ -185,7 +185,9 @@
                                     <h3 class="text-xl font-bold text-rose-700">Текущие запасы</h3>
                                 </div>
                                 @php
+                                    // Получаем партии с количеством больше 0
                                     $stockProducts = $product->stockProducts()
+                                        ->where('quantity', '>', 0)
                                         ->orderBy('expiration_date', 'asc')
                                         ->orderBy('created_at', 'asc')
                                         ->get();
@@ -199,6 +201,9 @@
                                             'quantity' => $group->sum('quantity'),
                                             'stocks' => $group
                                         ];
+                                    })->filter(function($group) {
+                                        // Фильтруем группы с количеством 0
+                                        return $group['quantity'] > 0;
                                     })->sortBy('expiration_date');
                                 @endphp
                                 @if($groupedStocks->count() > 0)

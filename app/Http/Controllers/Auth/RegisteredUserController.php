@@ -39,10 +39,25 @@ class RegisteredUserController extends Controller
     }
     public function store(Request $request): RedirectResponse
     {
+        // Очистка телефона от форматирования для проверки уникальности
+        $phone = preg_replace('/\D/', '', $request->phone);
+        if (strlen($phone) === 11 && $phone[0] === '7') {
+            $phone = '+' . $phone;
+        } elseif (strlen($phone) === 10) {
+            $phone = '+7' . $phone;
+        }
+
+        // Проверка уникальности телефона после очистки
+        if (User::where('phone', $phone)->exists()) {
+            return back()
+                ->withInput($request->only('last_name', 'first_name', 'phone', 'login'))
+                ->withErrors(['phone' => 'Пользователь с таким номером телефона уже зарегистрирован.']);
+        }
+
         $request->validate([
             'last_name' => ['required', 'string', 'max:100'],
             'first_name' => ['required', 'string', 'max:100'],
-            'phone' => ['required', 'string', 'max:20', 'unique:'.User::class, 'regex:/^\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}$/'],
+            'phone' => ['required', 'string', 'max:20', 'regex:/^\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}$/'],
             'login' => ['required', 'string', 'max:20', 'unique:'.User::class],
             'password' => ['required', 'confirmed', 'string', 'min:8'],
         ], [
@@ -55,7 +70,6 @@ class RegisteredUserController extends Controller
             'phone.required' => 'Поле "Телефон" обязательно для заполнения.',
             'phone.string' => 'Поле "Телефон" должно быть строкой.',
             'phone.max' => 'Поле "Телефон" не должно превышать 20 символов.',
-            'phone.unique' => 'Пользователь с таким телефоном уже зарегистрирован.',
             'phone.regex' => 'Телефон должен быть в формате +7 (XXX) XXX-XX-XX.',
             'login.required' => 'Поле "Логин" обязательно для заполнения.',
             'login.string' => 'Поле "Логин" должно быть строкой.',
@@ -66,14 +80,6 @@ class RegisteredUserController extends Controller
             'password.string' => 'Поле "Пароль" должно быть строкой.',
             'password.min' => 'Пароль должен содержать минимум 8 символов.',
         ]);
-
-        // Очистка телефона от форматирования для сохранения
-        $phone = preg_replace('/\D/', '', $request->phone);
-        if (strlen($phone) === 11 && $phone[0] === '7') {
-            $phone = '+' . $phone;
-        } elseif (strlen($phone) === 10) {
-            $phone = '+7' . $phone;
-        }
 
         // Сохраняем session_id ДО создания пользователя и логина для переноса корзины гостя
         $sessionId = $request->session()->getId();
@@ -104,5 +110,29 @@ class RegisteredUserController extends Controller
 
         // Перенаправляем пользователя на страницу, с которой он пришел, или на главную по умолчанию
         return redirect()->intended(route('index', absolute: false));
+    }
+
+    /**
+     * Check if phone number already exists (for AJAX validation).
+     */
+    public function checkPhone(Request $request)
+    {
+        $phone = $request->input('phone');
+        
+        if (empty($phone)) {
+            return response()->json(['exists' => false]);
+        }
+
+        // Очистка телефона от форматирования
+        $cleanPhone = preg_replace('/\D/', '', $phone);
+        if (strlen($cleanPhone) === 11 && $cleanPhone[0] === '7') {
+            $phone = '+' . $cleanPhone;
+        } elseif (strlen($cleanPhone) === 10) {
+            $phone = '+7' . $cleanPhone;
+        }
+
+        $exists = User::where('phone', $phone)->exists();
+
+        return response()->json(['exists' => $exists]);
     }
 }

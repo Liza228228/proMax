@@ -74,7 +74,7 @@
                             <div class="mt-4 flex flex-col gap-2">
                                 <a href="{{ route('manager.warehouses.transfer', $warehouse) }}" 
                                    class="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold px-4 py-2 rounded-xl text-center shadow-md">
-                                    Переместить товары
+                                    Переместить ингредиенты
                                 </a>
                                 <a href="{{ route('manager.warehouses.movementHistory', $warehouse) }}" 
                                    class="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold px-4 py-2 rounded-xl text-center shadow-md">

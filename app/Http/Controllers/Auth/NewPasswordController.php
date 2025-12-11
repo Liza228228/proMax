@@ -34,6 +34,13 @@ class NewPasswordController extends Controller
             'token' => ['required'],
             'email' => ['required', 'email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        ], [
+            'token.required' => 'Токен сброса пароля обязателен.',
+            'email.required' => 'Поле "Email" обязательно для заполнения.',
+            'email.email' => 'Email должен быть в правильном формате.',
+            'password.required' => 'Поле "Пароль" обязательно для заполнения.',
+            'password.min' => 'Пароль должен содержать минимум 8 символов.',
+            'password.confirmed' => 'Пароли не совпадают.',
         ]);
 
         // Here we will attempt to reset the user's password. If it is successful we

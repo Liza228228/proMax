@@ -538,6 +538,44 @@
                                 errorElement.textContent = '';
                             }
 
+                            // Проверка уникальности названия продукта
+                            const productId = {{ $product->id }};
+                            let nameCheckTimeout;
+                            nameProductInput.addEventListener('input', function() {
+                                const name = this.value.trim();
+                                
+                                clearTimeout(nameCheckTimeout);
+                                
+                                hideFieldError(nameProductError);
+                                nameProductInput.classList.remove('border-red-500');
+                                nameProductInput.classList.add('border-rose-300');
+
+                                if (name.length === 0) {
+                                    return;
+                                }
+
+                                nameCheckTimeout = setTimeout(function() {
+                                    fetch('{{ route("admin.products.checkName") }}?name_product=' + encodeURIComponent(name) + '&product_id=' + productId, {
+                                        method: 'GET',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-Requested-With': 'XMLHttpRequest'
+                                        }
+                                    })
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        if (data.exists) {
+                                            showFieldError(nameProductError, 'Продукт с таким названием уже существует.');
+                                            nameProductInput.classList.remove('border-rose-300');
+                                            nameProductInput.classList.add('border-red-500');
+                                        }
+                                    })
+                                    .catch(error => {
+                                        console.error('Ошибка при проверке названия:', error);
+                                    });
+                                }, 500);
+                            });
+
                             // Функция валидации числа
                             function validateNumber(value, fieldName, allowNegative = false) {
                                 if (value === '' || value === null) {
@@ -556,10 +594,12 @@
 
                             // Обработка отправки формы
                             form.addEventListener('submit', function(e) {
+                                e.preventDefault();
                                 let hasErrors = false;
                                 
-                                // Проверка названия продукта
-                                if (!nameProductInput.value.trim()) {
+                                // Проверка названия продукта (синхронная проверка на пустое поле)
+                                const nameProduct = nameProductInput.value.trim();
+                                if (!nameProduct) {
                                     showFieldError(nameProductError, 'Поле "Название продукта" обязательно для заполнения');
                                     nameProductInput.classList.add('border-red-500');
                                     hasErrors = true;
@@ -657,13 +697,43 @@
                                 }
 
                                 if (hasErrors) {
-                                    e.preventDefault();
                                     // Прокрутка к первому полю с ошибкой
                                     const firstError = document.querySelector('.border-red-500');
                                     if (firstError) {
                                         firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
                                     }
                                     return false;
+                                }
+
+                                // Если все синхронные проверки прошли, проверяем уникальность названия
+                                if (nameProduct) {
+                                    fetch('{{ route("admin.products.checkName") }}?name_product=' + encodeURIComponent(nameProduct) + '&product_id=' + productId, {
+                                        method: 'GET',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-Requested-With': 'XMLHttpRequest'
+                                        }
+                                    })
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        if (data.exists) {
+                                            showFieldError(nameProductError, 'Продукт с таким названием уже существует.');
+                                            nameProductInput.classList.remove('border-rose-300');
+                                            nameProductInput.classList.add('border-red-500');
+                                            nameProductInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                        } else {
+                                            // Если уникальность подтверждена, отправляем форму
+                                            form.submit();
+                                        }
+                                    })
+                                    .catch(error => {
+                                        console.error('Ошибка при проверке названия:', error);
+                                        // Если ошибка при проверке, все равно отправляем форму (серверная валидация сработает)
+                                        form.submit();
+                                    });
+                                } else {
+                                    // Если название пустое, форма уже не отправится из-за hasErrors
+                                    form.submit();
                                 }
                             });
 

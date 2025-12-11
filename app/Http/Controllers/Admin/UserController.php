@@ -150,6 +150,14 @@ class UserController extends Controller
             $request->merge(['role' => $user->role]);
         }
 
+        // Проверка: менеджер не может быть переведен в обычного пользователя (роль 1)
+        // Менеджер может быть только администратором (роль 2) или менеджером (роль 3)
+        if ($user->role == 3 && $request->role == 1) {
+            return redirect()->route('admin.users.edit', $user)
+                ->with('error', 'Менеджера нельзя перевести в обычного пользователя. Менеджер может быть только администратором или менеджером.')
+                ->withInput();
+        }
+
         $validationRules = [
             'last_name' => ['required', 'string', 'max:100'],
             'first_name' => ['required', 'string', 'max:100'],

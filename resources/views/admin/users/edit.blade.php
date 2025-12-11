@@ -65,11 +65,14 @@
                             <x-input-label for="role" :value="__('Роль')" />
                             @php
                                 $isAdmin = $user->role == 2;
+                                $isManager = $user->role == 3;
                                 $isCurrentUser = $currentUser && $currentUser->id == $user->id;
                                 $canChangeRole = !$isAdmin && !($isCurrentUser && $currentUser->role == 2);
                             @endphp
                             <select id="role" name="role" class="block mt-1 w-full rounded-xl border-2 border-rose-300 px-4 py-2 shadow-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500 bg-white text-gray-900 font-medium transition-all" {{ !$canChangeRole ? 'disabled' : '' }}>
-                                <option value="1" {{ old('role', $user->role) == 1 ? 'selected' : '' }}>Пользователь</option>
+                                @if(!$isManager)
+                                    <option value="1" {{ old('role', $user->role) == 1 ? 'selected' : '' }}>Пользователь</option>
+                                @endif
                                 <option value="2" {{ old('role', $user->role) == 2 ? 'selected' : '' }}>Администратор</option>
                                 <option value="3" {{ old('role', $user->role) == 3 ? 'selected' : '' }}>Менеджер</option>
                             </select>
@@ -225,13 +228,15 @@
                                 hideErrors();
                             });
 
+                            // Проверка роли при изменении
+                            roleSelect.addEventListener('change', function() {
+                                this.classList.remove('border-red-500');
+                                hideErrors();
+                            });
+
                             // Очистка ошибок при вводе
-                            [lastNameInput, firstNameInput, phoneInput, loginInput, passwordInput, passwordConfirmationInput, roleSelect].forEach(input => {
+                            [lastNameInput, firstNameInput, phoneInput, loginInput, passwordInput, passwordConfirmationInput].forEach(input => {
                                 input.addEventListener('input', function() {
-                                    this.classList.remove('border-red-500');
-                                    hideErrors();
-                                });
-                                input.addEventListener('change', function() {
                                     this.classList.remove('border-red-500');
                                     hideErrors();
                                 });

@@ -51,10 +51,24 @@ class WarehouseController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'name' => ['required', 'string', 'max:100'],
+            'name' => ['required', 'string', 'max:100', 'unique:warehouses,name'],
             'city' => ['required', 'string', 'max:100'],
             'street' => ['required', 'string', 'max:100'],
             'house' => ['required', 'string', 'max:100'],
+        ], [
+            'name.required' => 'Поле "Название склада" обязательно для заполнения.',
+            'name.string' => 'Поле "Название склада" должно быть строкой.',
+            'name.max' => 'Поле "Название склада" не должно превышать 100 символов.',
+            'name.unique' => 'Склад с таким названием уже существует.',
+            'city.required' => 'Поле "Город" обязательно для заполнения.',
+            'city.string' => 'Поле "Город" должно быть строкой.',
+            'city.max' => 'Поле "Город" не должно превышать 100 символов.',
+            'street.required' => 'Поле "Улица" обязательно для заполнения.',
+            'street.string' => 'Поле "Улица" должно быть строкой.',
+            'street.max' => 'Поле "Улица" не должно превышать 100 символов.',
+            'house.required' => 'Поле "Дом" обязательно для заполнения.',
+            'house.string' => 'Поле "Дом" должно быть строкой.',
+            'house.max' => 'Поле "Дом" не должно превышать 100 символов.',
         ]);
 
         Warehouse::create([
@@ -202,10 +216,12 @@ class WarehouseController extends Controller
         }
 
         $request->validate([
-            'name' => ['required', 'string', 'max:100'],
+            'name' => ['required', 'string', 'max:100', 'unique:warehouses,name,' . $warehouse->id],
             'city' => ['required', 'string', 'max:100'],
             'street' => ['required', 'string', 'max:100'],
             'house' => ['required', 'string', 'max:100'],
+        ], [
+            'name.unique' => 'Склад с таким названием уже существует.',
         ]);
 
         $warehouse->update([
@@ -627,6 +643,29 @@ class WarehouseController extends Controller
         });
 
         return view('manager.warehouses.movement-history', compact('movements', 'warehouse', 'warehouses', 'ingredients'));
+    }
+
+    /**
+     * Check if warehouse name already exists (for AJAX validation).
+     */
+    public function checkName(Request $request)
+    {
+        $name = $request->input('name');
+        $warehouseId = $request->input('warehouse_id'); // For edit form
+        
+        if (empty($name)) {
+            return response()->json(['exists' => false]);
+        }
+
+        $query = Warehouse::where('name', $name);
+        
+        if ($warehouseId) {
+            $query->where('id', '!=', $warehouseId);
+        }
+        
+        $exists = $query->exists();
+
+        return response()->json(['exists' => $exists]);
     }
 }
 
