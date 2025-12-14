@@ -33,7 +33,7 @@ Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-// Дашборд администратора
+// панель администратора
 Route::middleware(['auth'])->group(function () {
     Route::get('/admin/dashboard', function () {
         return view('admin.dashboard');
@@ -93,7 +93,7 @@ Route::middleware(['auth'])->group(function () {
     });
 });
 
-// Дашборд менеджера
+// панель менеджера
 Route::middleware(['auth'])->group(function () {
     Route::get('/manager/dashboard', function () {
         return view('manager.dashboard');
@@ -111,6 +111,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/create', [WarehouseController::class, 'create'])->name('create');
         Route::post('/', [WarehouseController::class, 'store'])->name('store');
         Route::get('/check-name', [WarehouseController::class, 'checkName'])->name('checkName');
+        Route::get('/check-address', [WarehouseController::class, 'checkAddress'])->name('checkAddress');
         Route::get('/{warehouse}', [WarehouseController::class, 'show'])->name('show');
         Route::get('/{warehouse}/movement-history', [WarehouseController::class, 'movementHistory'])->name('movementHistory');
         Route::get('/{warehouse}/edit', [WarehouseController::class, 'edit'])->name('edit');

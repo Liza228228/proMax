@@ -57,7 +57,7 @@
                                          type="text" 
                                          name="expiration_days" 
                                          :value="old('expiration_days')" />
-                            <p class="mt-1 text-sm text-gray-500">Укажите срок годности в количестве дней от текущей даты</p>
+                           
                             <div id="expiration_days_error" class="hidden mt-2 text-sm text-red-600 font-semibold"></div>
                             <x-input-error :messages="$errors->get('expiration_days')" class="mt-2" />
                         </div>
@@ -100,16 +100,28 @@
                         </div>
 
                         <script>
+                            // Храним выбранные файлы
+                            let selectedFiles = [];
+                            
                             function previewImages(input) {
+                                if (input.files && input.files.length > 0) {
+                                    // Обновляем массив выбранных файлов (заменяем старые новыми)
+                                    selectedFiles = Array.from(input.files);
+                                    updatePreview();
+                                }
+                            }
+                            
+                            function updatePreview() {
                                 const preview = document.getElementById('imagePreview');
                                 preview.innerHTML = '';
                                 
-                                if (input.files && input.files.length > 0) {
-                                    Array.from(input.files).forEach((file, index) => {
+                                if (selectedFiles.length > 0) {
+                                    selectedFiles.forEach((file, index) => {
                                         const reader = new FileReader();
                                         reader.onload = function(e) {
                                             const div = document.createElement('div');
                                             div.className = 'relative flex-shrink-0';
+                                            div.setAttribute('data-file-index', index);
                                             div.innerHTML = `
                                                 <div class="relative">
                                                     <img src="${e.target.result}" 
@@ -126,6 +138,13 @@
                                                         id="btn-${index}">
                                                     Сделать главным
                                                 </button>
+                                                <label class="block mt-1 text-center">
+                                                    <input type="checkbox" 
+                                                           class="remove-image-checkbox rounded border-gray-300 text-red-600 shadow-sm focus:ring-red-500"
+                                                           data-image-index="${index}"
+                                                           onchange="handleImageRemove(${index}, this.checked)">
+                                                    <span class="ms-1 text-xs text-red-600">Удалить</span>
+                                                </label>
                                             `;
                                             preview.appendChild(div);
                                             
@@ -135,7 +154,49 @@
                                         };
                                         reader.readAsDataURL(file);
                                     });
+                                    
+                                    // Обновляем input файлов
+                                    updateFileInput();
                                 }
+                            }
+                            
+                            function handleImageRemove(index, isChecked) {
+                                if (isChecked) {
+                                    // Удаляем изображение
+                                    removeImage(index);
+                                }
+                            }
+                            
+                            function removeImage(index) {
+                                // Удаляем файл из массива
+                                selectedFiles.splice(index, 1);
+                                
+                                // Обновляем preview
+                                updatePreview();
+                                
+                                // Если удалили главное изображение, делаем первое главным
+                                const primaryIndex = parseInt(document.getElementById('primary_image_index').value);
+                                if (primaryIndex === index) {
+                                    if (selectedFiles.length > 0) {
+                                        setPrimaryImage(0);
+                                    } else {
+                                        document.getElementById('primary_image_index').value = '0';
+                                    }
+                                } else if (primaryIndex > index && selectedFiles.length > 0) {
+                                    // Если удалили изображение перед главным, уменьшаем индекс главного
+                                    setPrimaryImage(primaryIndex - 1);
+                                }
+                            }
+                            
+                            function updateFileInput() {
+                                const input = document.getElementById('images');
+                                const dataTransfer = new DataTransfer();
+                                
+                                selectedFiles.forEach(file => {
+                                    dataTransfer.items.add(file);
+                                });
+                                
+                                input.files = dataTransfer.files;
                             }
                             
                             function setPrimaryImage(index) {
@@ -188,6 +249,62 @@
                             // Данные об ингредиентах
                             const ingredientsData = @json($ingredientsData);
 
+                            // Функция для получения списка уже выбранных ингредиентов
+                            function getSelectedIngredientIds(excludeRowId = null) {
+                                const selectedIds = [];
+                                const rows = document.querySelectorAll('[id^="ingredient-row-"]');
+                                rows.forEach(row => {
+                                    const rowId = row.id.replace('ingredient-row-', '');
+                                    if (excludeRowId !== null && rowId == excludeRowId) {
+                                        return; // Пропускаем текущую строку
+                                    }
+                                    const select = row.querySelector('select[name*="[id]"]');
+                                    if (select && select.value) {
+                                        selectedIds.push(select.value);
+                                    }
+                                });
+                                return selectedIds;
+                            }
+
+                            // Функция для обновления опций ингредиентов в селекте
+                            function updateIngredientOptions(select, excludeRowId = null) {
+                                const currentValue = select.value;
+                                const selectedIds = getSelectedIngredientIds(excludeRowId);
+                                
+                                // Очищаем селект
+                                select.innerHTML = '<option value="">Выберите ингредиент</option>';
+                                
+                                // Добавляем опции из шаблона, исключая уже выбранные
+                                const template = document.getElementById('ingredient-options-template');
+                                const options = template.content.querySelectorAll('option');
+                                options.forEach(option => {
+                                    if (option.value && !selectedIds.includes(option.value)) {
+                                        const newOption = option.cloneNode(true);
+                                        select.appendChild(newOption);
+                                    }
+                                });
+                                
+                                // Восстанавливаем выбранное значение, если оно все еще доступно
+                                if (currentValue && !selectedIds.includes(currentValue)) {
+                                    select.value = currentValue;
+                                } else if (currentValue && selectedIds.includes(currentValue)) {
+                                    // Если текущее значение было выбрано в другой строке, сбрасываем
+                                    select.value = '';
+                                }
+                            }
+
+                            // Функция для обновления всех селектов ингредиентов
+                            function updateAllIngredientSelects() {
+                                const rows = document.querySelectorAll('[id^="ingredient-row-"]');
+                                rows.forEach(row => {
+                                    const rowId = row.id.replace('ingredient-row-', '');
+                                    const select = row.querySelector('select[name*="[id]"]');
+                                    if (select) {
+                                        updateIngredientOptions(select, rowId);
+                                    }
+                                });
+                            }
+
                             function addIngredientRow(ingredientId = '', quantity = '', unitId = '') {
                                 const container = document.getElementById('ingredients-container');
                                 const template = document.getElementById('ingredient-options-template');
@@ -208,12 +325,19 @@
                                 select.id = 'ingredient-select-' + ingredientRowCount;
                                 select.className = 'block w-full rounded-xl border-2 border-rose-300 px-4 py-2 shadow-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500 bg-white text-gray-900 font-medium transition-all';
                                 
-                                // Клонируем опции из шаблона
-                                const optionsClone = template.content.cloneNode(true);
-                                select.appendChild(optionsClone);
+                                // Добавляем опции, исключая уже выбранные
+                                const selectedIds = getSelectedIngredientIds(ingredientRowCount);
+                                select.innerHTML = '<option value="">Выберите ингредиент</option>';
+                                const options = template.content.querySelectorAll('option');
+                                options.forEach(option => {
+                                    if (option.value && !selectedIds.includes(option.value)) {
+                                        const newOption = option.cloneNode(true);
+                                        select.appendChild(newOption);
+                                    }
+                                });
                                 
                                 // Устанавливаем выбранное значение, если указано
-                                if (ingredientId) {
+                                if (ingredientId && !selectedIds.includes(ingredientId)) {
                                     select.value = ingredientId;
                                 }
                                 
@@ -287,6 +411,8 @@
                                 select.addEventListener('change', function() {
                                     updateUnitsForIngredient();
                                     this.classList.remove('border-red-500');
+                                    // Обновляем все селекты ингредиентов при изменении
+                                    updateAllIngredientSelects();
                                 });
                                 
                                 // Обработчик для количества
@@ -335,21 +461,39 @@
                                 
                                 container.appendChild(row);
                                 ingredientRowCount++;
+                                
+                                // Скрываем ошибку при добавлении нового ингредиента
+                                const ingredientsError = document.getElementById('ingredients_error');
+                                if (ingredientsError) {
+                                    ingredientsError.classList.add('hidden');
+                                    ingredientsError.textContent = '';
+                                }
                             }
 
                             function removeIngredientRow(rowId) {
                                 const container = document.getElementById('ingredients-container');
+                                const ingredientsError = document.getElementById('ingredients_error');
                                 const rows = container.querySelectorAll('[id^="ingredient-row-"]');
                                 
                                 // Проверяем, что не удаляем последний ингредиент
                                 if (rows.length <= 1) {
-                                    alert('Нельзя удалить последний ингредиент. Продукт должен содержать хотя бы один ингредиент.');
+                                    if (ingredientsError) {
+                                        ingredientsError.textContent = 'Продукция должна содержать хотя бы один ингредиент.';
+                                        ingredientsError.classList.remove('hidden');
+                                    }
                                     return;
                                 }
                                 
                                 const row = document.getElementById('ingredient-row-' + rowId);
                                 if (row) {
                                     row.remove();
+                                    // Скрываем ошибку, если она была показана
+                                    if (ingredientsError) {
+                                        ingredientsError.classList.add('hidden');
+                                        ingredientsError.textContent = '';
+                                    }
+                                    // Обновляем все селекты ингредиентов после удаления
+                                    updateAllIngredientSelects();
                                 }
                             }
 
@@ -370,6 +514,7 @@
                                     class="mt-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md text-sm transition-colors">
                                 + Добавить ингредиент
                             </button>
+                            <div id="ingredients_error" class="hidden mt-2 text-sm text-red-600"></div>
                             <x-input-error :messages="$errors->get('ingredients')" class="mt-2" />
                             <x-input-error :messages="$errors->get('ingredients.*')" class="mt-2" />
                             
@@ -556,7 +701,9 @@
                                 }
 
                                 // Проверка изображений
-                                if (!imagesInput.files || imagesInput.files.length === 0) {
+                                // Проверяем количество выбранных файлов (после возможных удалений)
+                                const currentFilesCount = selectedFiles.length;
+                                if (currentFilesCount === 0) {
                                     showFieldError(imagesError, 'Выберите хотя бы одно изображение');
                                     imagesInput.classList.add('border-red-500');
                                     hasErrors = true;

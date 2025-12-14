@@ -13,7 +13,7 @@ class HomeController extends Controller
      */
     public function index(): View
     {
-        // Получаем ID товаров-новинок из кеша (установленные администратором)
+        // Получаем ID товаров-новинок (установленные администратором)
         $featuredIds = Cache::get('featured_products', []);
         
         if (!empty($featuredIds)) {

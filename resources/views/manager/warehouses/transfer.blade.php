@@ -121,6 +121,7 @@
                             <div>
                                 <x-input-label for="quantity" :value="__('Количество')" />
                                 <input id="quantity" class="block mt-1 w-full rounded-xl border-2 border-rose-300 px-4 py-2 shadow-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500" type="text" name="quantity" value="{{ old('quantity') }}" />
+                                <div id="quantity-error" class="hidden mt-2 text-sm text-red-600"></div>
                                 <x-input-error :messages="$errors->get('quantity')" class="mt-2" />
                             </div>
 
@@ -290,6 +291,7 @@
                             const validationErrors = document.getElementById('validation-errors');
                             const errorList = document.getElementById('error-list');
                             const toWarehouseSelect = document.getElementById('to_warehouse_id');
+                            const quantityError = document.getElementById('quantity-error');
 
                             // Функция отображения ошибок
                             function showErrors(errors) {
@@ -347,6 +349,9 @@
 
                                 // Проверка количества
                                 const quantityValue = parseFloat(quantityInput.value);
+                                quantityError.classList.add('hidden');
+                                quantityError.textContent = '';
+                                
                                 if (!quantityInput.value) {
                                     errors.push('Укажите количество');
                                     quantityInput.classList.add('border-red-500');
@@ -354,7 +359,41 @@
                                     errors.push('Количество должно быть положительным числом');
                                     quantityInput.classList.add('border-red-500');
                                 } else {
-                                    quantityInput.classList.remove('border-red-500');
+                                    // Проверка, не превышает ли количество доступное на складе
+                                    const selectedIngredientId = ingredientSelect.value;
+                                    const selectedExpirationDate = expirationDateSelect.value;
+                                    const selectedUnitId = unitSelect.value;
+                                    
+                                    if (selectedIngredientId && selectedExpirationDate && selectedUnitId) {
+                                        const batches = stockBatches[selectedIngredientId];
+                                        const batchKey = selectedExpirationDate === '' ? '__null__' : selectedExpirationDate;
+                                        const batch = batches[batchKey];
+                                        
+                                        if (batches && batch) {
+                                            const baseQuantity = batch.quantity;
+                                            const unitData = unitsData[selectedUnitId];
+                                            
+                                            if (unitData) {
+                                                const availableQuantity = baseQuantity / unitData.multiplier_to_base;
+                                                
+                                                if (quantityValue > availableQuantity) {
+                                                    const errorMessage = `Недостаточно ингредиента на складе. Доступно: ${availableQuantity.toFixed(3)}`;
+                                                    errors.push(errorMessage);
+                                                    quantityError.textContent = errorMessage;
+                                                    quantityError.classList.remove('hidden');
+                                                    quantityInput.classList.add('border-red-500');
+                                                } else {
+                                                    quantityInput.classList.remove('border-red-500');
+                                                }
+                                            } else {
+                                                quantityInput.classList.remove('border-red-500');
+                                            }
+                                        } else {
+                                            quantityInput.classList.remove('border-red-500');
+                                        }
+                                    } else {
+                                        quantityInput.classList.remove('border-red-500');
+                                    }
                                 }
 
                                 if (errors.length > 0) {
@@ -376,7 +415,40 @@
 
                             quantityInput.addEventListener('input', function() {
                                 this.classList.remove('border-red-500');
+                                quantityError.classList.add('hidden');
+                                quantityError.textContent = '';
                                 hideErrors();
+                                
+                                // Проверка в реальном времени при вводе
+                                const quantityValue = parseFloat(this.value);
+                                const selectedIngredientId = ingredientSelect.value;
+                                const selectedExpirationDate = expirationDateSelect.value;
+                                const selectedUnitId = unitSelect.value;
+                                
+                                if (!isNaN(quantityValue) && quantityValue > 0 && selectedIngredientId && selectedExpirationDate && selectedUnitId) {
+                                    const batches = stockBatches[selectedIngredientId];
+                                    const batchKey = selectedExpirationDate === '' ? '__null__' : selectedExpirationDate;
+                                    const batch = batches[batchKey];
+                                    
+                                    if (batches && batch) {
+                                        const baseQuantity = batch.quantity;
+                                        const unitData = unitsData[selectedUnitId];
+                                        
+                                        if (unitData) {
+                                            const availableQuantity = baseQuantity / unitData.multiplier_to_base;
+                                            
+                                            if (quantityValue > availableQuantity) {
+                                                quantityError.textContent = `Недостаточно ингредиента на складе. Доступно: ${availableQuantity.toFixed(3)}`;
+                                                quantityError.classList.remove('hidden');
+                                                this.classList.add('border-red-500');
+                                            } else {
+                                                quantityError.classList.add('hidden');
+                                                quantityError.textContent = '';
+                                                this.classList.remove('border-red-500');
+                                            }
+                                        }
+                                    }
+                                }
                             });
 
                             // Запрет ввода некорректных символов в количество

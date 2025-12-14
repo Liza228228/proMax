@@ -51,15 +51,39 @@ class WarehouseController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'name' => ['required', 'string', 'max:100', 'unique:warehouses,name'],
+            'name' => [
+                'required', 
+                'string', 
+                'max:100',
+                function ($attribute, $value, $fail) use ($request) {
+                    // Проверка: нельзя создать склад с одинаковым названием в одном городе
+                    $exists = Warehouse::where('name', $value)
+                        ->where('city', $request->city)
+                        ->exists();
+                    if ($exists) {
+                        $fail('Склад с таким названием уже существует в городе "' . $request->city . '".');
+                    }
+                }
+            ],
             'city' => ['required', 'string', 'max:100'],
             'street' => ['required', 'string', 'max:100'],
             'house' => ['required', 'string', 'max:100'],
+            'address' => [
+                function ($attribute, $value, $fail) use ($request) {
+                    // Проверка: нельзя создать склад с одинаковым адресом (город + улица + дом)
+                    $exists = Warehouse::where('city', $request->city)
+                        ->where('street', $request->street)
+                        ->where('house', $request->house)
+                        ->exists();
+                    if ($exists) {
+                        $fail('Склад с таким адресом уже существует.');
+                    }
+                }
+            ],
         ], [
             'name.required' => 'Поле "Название склада" обязательно для заполнения.',
             'name.string' => 'Поле "Название склада" должно быть строкой.',
             'name.max' => 'Поле "Название склада" не должно превышать 100 символов.',
-            'name.unique' => 'Склад с таким названием уже существует.',
             'city.required' => 'Поле "Город" обязательно для заполнения.',
             'city.string' => 'Поле "Город" должно быть строкой.',
             'city.max' => 'Поле "Город" не должно превышать 100 символов.',
@@ -216,12 +240,50 @@ class WarehouseController extends Controller
         }
 
         $request->validate([
-            'name' => ['required', 'string', 'max:100', 'unique:warehouses,name,' . $warehouse->id],
+            'name' => [
+                'required', 
+                'string', 
+                'max:100',
+                function ($attribute, $value, $fail) use ($request, $warehouse) {
+                    // Проверка: нельзя создать склад с одинаковым названием в одном городе
+                    $exists = Warehouse::where('name', $value)
+                        ->where('city', $request->city)
+                        ->where('id', '!=', $warehouse->id)
+                        ->exists();
+                    if ($exists) {
+                        $fail('Склад с таким названием уже существует в городе "' . $request->city . '".');
+                    }
+                }
+            ],
             'city' => ['required', 'string', 'max:100'],
             'street' => ['required', 'string', 'max:100'],
             'house' => ['required', 'string', 'max:100'],
+            'address' => [
+                function ($attribute, $value, $fail) use ($request, $warehouse) {
+                    // Проверка: нельзя создать склад с одинаковым адресом (город + улица + дом)
+                    $exists = Warehouse::where('city', $request->city)
+                        ->where('street', $request->street)
+                        ->where('house', $request->house)
+                        ->where('id', '!=', $warehouse->id)
+                        ->exists();
+                    if ($exists) {
+                        $fail('Склад с таким адресом уже существует.');
+                    }
+                }
+            ],
         ], [
-            'name.unique' => 'Склад с таким названием уже существует.',
+            'name.required' => 'Поле "Название склада" обязательно для заполнения.',
+            'name.string' => 'Поле "Название склада" должно быть строкой.',
+            'name.max' => 'Поле "Название склада" не должно превышать 100 символов.',
+            'city.required' => 'Поле "Город" обязательно для заполнения.',
+            'city.string' => 'Поле "Город" должно быть строкой.',
+            'city.max' => 'Поле "Город" не должно превышать 100 символов.',
+            'street.required' => 'Поле "Улица" обязательно для заполнения.',
+            'street.string' => 'Поле "Улица" должно быть строкой.',
+            'street.max' => 'Поле "Улица" не должно превышать 100 символов.',
+            'house.required' => 'Поле "Дом" обязательно для заполнения.',
+            'house.string' => 'Поле "Дом" должно быть строкой.',
+            'house.max' => 'Поле "Дом" не должно превышать 100 символов.',
         ]);
 
         $warehouse->update([
@@ -646,18 +708,45 @@ class WarehouseController extends Controller
     }
 
     /**
-     * Check if warehouse name already exists (for AJAX validation).
+     * Check if warehouse name already exists in the same city (for AJAX validation).
      */
     public function checkName(Request $request)
     {
         $name = $request->input('name');
+        $city = $request->input('city');
         $warehouseId = $request->input('warehouse_id'); // For edit form
         
-        if (empty($name)) {
+        if (empty($name) || empty($city)) {
             return response()->json(['exists' => false]);
         }
 
-        $query = Warehouse::where('name', $name);
+        $query = Warehouse::where('name', $name)
+            ->where('city', $city);
+        
+        if ($warehouseId) {
+            $query->where('id', '!=', $warehouseId);
+        }
+        
+        $exists = $query->exists();
+
+        return response()->json(['exists' => $exists]);
+    }
+
+
+    public function checkAddress(Request $request)
+    {
+        $city = $request->input('city');
+        $street = $request->input('street');
+        $house = $request->input('house');
+        $warehouseId = $request->input('warehouse_id'); // For edit form
+        
+        if (empty($city) || empty($street) || empty($house)) {
+            return response()->json(['exists' => false]);
+        }
+
+        $query = Warehouse::where('city', $city)
+            ->where('street', $street)
+            ->where('house', $house);
         
         if ($warehouseId) {
             $query->where('id', '!=', $warehouseId);

@@ -81,7 +81,7 @@ class FeaturedController extends Controller
         
         Cache::forever('featured_products', $featuredIds);
         
-        return redirect()->back()->with('success', 'Товар удален из новинок');
+        return redirect()->back()->with('success', 'Продукция удалена из новинок');
     }
     
     /**
@@ -106,7 +106,7 @@ class FeaturedController extends Controller
     {
         Cache::forget('featured_products');
         
-        return redirect()->back()->with('success', 'Настройки сброшены. Теперь показываются последние 6 добавленных товаров');
+        return redirect()->back()->with('success', 'Отображаются последние 6 добавленной продукции');
     }
 }
 

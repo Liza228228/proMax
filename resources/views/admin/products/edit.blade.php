@@ -51,13 +51,6 @@
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                            <!-- Текущее количество (только для отображения) -->
-                            <div>
-                                <x-input-label :value="__('Текущее количество')" />
-                                <p class="mt-1 text-lg font-bold text-gray-900">{{ $product->total_quantity ?? 0 }} шт.</p>
-                                <p class="mt-1 text-xs text-gray-500">Количество управляется через добавление продукции</p>
-                            </div>
-
                             <!-- Срок годности -->
                             <div>
                                 <x-input-label for="expiration_days" :value="__('Срок годности (дней)')" />
@@ -66,7 +59,7 @@
                                              type="text" 
                                              name="expiration_days" 
                                              :value="old('expiration_days', $product->expiration_date ?? 7)" />
-                                <p class="mt-1 text-sm text-gray-500">Укажите срок годности в количестве дней от текущей даты</p>
+
                                 <div id="expiration_days_error" class="hidden mt-2 text-sm text-red-600 font-semibold"></div>
                                 <x-input-error :messages="$errors->get('expiration_days')" class="mt-2" />
                             </div>
@@ -115,7 +108,8 @@
                                                 <input type="checkbox" 
                                                        name="delete_images[]" 
                                                        value="{{ $image->id }}"
-                                                       class="rounded border-gray-300 text-red-600 shadow-sm focus:ring-red-500">
+                                                       class="delete-image-checkbox rounded border-gray-300 text-red-600 shadow-sm focus:ring-red-500"
+                                                       onchange="validateImages()">
                                                 <span class="ms-1 text-xs text-red-600">Удалить</span>
                                             </label>
                                             <input type="radio" 
@@ -130,6 +124,29 @@
                             </div>
                             
                             <script>
+                                function validateImages() {
+                                    const deleteCheckboxes = document.querySelectorAll('.delete-image-checkbox:checked');
+                                    const imagesToDeleteCount = deleteCheckboxes.length;
+                                    const currentImagesCount = document.querySelectorAll('.delete-image-checkbox').length;
+                                    const newImagesInput = document.querySelector('input[name="images[]"]');
+                                    const newImagesCount = newImagesInput && newImagesInput.files ? newImagesInput.files.length : 0;
+                                    const remainingImagesCount = currentImagesCount - imagesToDeleteCount + newImagesCount;
+                                    
+                                    const imagesErrorElement = document.querySelector('.images-error-message');
+                                    
+                                    if (remainingImagesCount < 1) {
+                                        if (imagesErrorElement) {
+                                            imagesErrorElement.textContent = 'У продукта должно быть хотя бы одно изображение.';
+                                            imagesErrorElement.classList.remove('hidden');
+                                        }
+                                    } else {
+                                        if (imagesErrorElement) {
+                                            imagesErrorElement.classList.add('hidden');
+                                            imagesErrorElement.textContent = '';
+                                        }
+                                    }
+                                }
+                                
                                 function setPrimaryImage(imageId) {
                                     // Убираем выделение со всех
                                     document.querySelectorAll('input[name="primary_image"]').forEach(radio => {
@@ -185,8 +202,9 @@
                                    multiple 
                                    accept="image/*"
                                    class="block mt-1 w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900 dark:file:text-blue-300" 
-                                   onchange="previewNewImages(this)" />
+                                   onchange="previewNewImages(this); validateImages();" />
                             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Выберите изображения и нажмите кнопку "Сделать главным" для выбора главного фото.</p>
+                            <div class="images-error-message hidden mt-2 text-sm text-red-600"></div>
                             <x-input-error :messages="$errors->get('images')" class="mt-2" />
                             <x-input-error :messages="$errors->get('images.*')" class="mt-2" />
                             
@@ -278,6 +296,7 @@
                             <div id="ingredients-container" class="space-y-3 mt-2">
                                 <!-- Будет заполнено через JavaScript -->
                             </div>
+                            <div id="ingredients_error" class="hidden mt-2 text-sm text-red-600"></div>
                             <button type="button" 
                                     onclick="addIngredientRow()" 
                                     class="mt-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md text-sm transition-colors">
@@ -310,6 +329,62 @@
                             // Данные текущего рецепта
                             const currentRecepts = @json($receptsData ?? []);
 
+                            // Функция для получения списка уже выбранных ингредиентов
+                            function getSelectedIngredientIds(excludeRowId = null) {
+                                const selectedIds = [];
+                                const rows = document.querySelectorAll('[id^="ingredient-row-"]');
+                                rows.forEach(row => {
+                                    const rowId = row.id.replace('ingredient-row-', '');
+                                    if (excludeRowId !== null && rowId == excludeRowId) {
+                                        return; // Пропускаем текущую строку
+                                    }
+                                    const select = row.querySelector('select[name*="[id]"]');
+                                    if (select && select.value) {
+                                        selectedIds.push(select.value);
+                                    }
+                                });
+                                return selectedIds;
+                            }
+
+                            // Функция для обновления опций ингредиентов в селекте
+                            function updateIngredientOptions(select, excludeRowId = null) {
+                                const currentValue = select.value;
+                                const selectedIds = getSelectedIngredientIds(excludeRowId);
+                                
+                                // Очищаем селект
+                                select.innerHTML = '<option value="">Выберите ингредиент</option>';
+                                
+                                // Добавляем опции из шаблона, исключая уже выбранные
+                                const template = document.getElementById('ingredient-options-template');
+                                const options = template.content.querySelectorAll('option');
+                                options.forEach(option => {
+                                    if (option.value && !selectedIds.includes(option.value)) {
+                                        const newOption = option.cloneNode(true);
+                                        select.appendChild(newOption);
+                                    }
+                                });
+                                
+                                // Восстанавливаем выбранное значение, если оно все еще доступно
+                                if (currentValue && !selectedIds.includes(currentValue)) {
+                                    select.value = currentValue;
+                                } else if (currentValue && selectedIds.includes(currentValue)) {
+                                    // Если текущее значение было выбрано в другой строке, сбрасываем
+                                    select.value = '';
+                                }
+                            }
+
+                            // Функция для обновления всех селектов ингредиентов
+                            function updateAllIngredientSelects() {
+                                const rows = document.querySelectorAll('[id^="ingredient-row-"]');
+                                rows.forEach(row => {
+                                    const rowId = row.id.replace('ingredient-row-', '');
+                                    const select = row.querySelector('select[name*="[id]"]');
+                                    if (select) {
+                                        updateIngredientOptions(select, rowId);
+                                    }
+                                });
+                            }
+
                             function addIngredientRow(ingredientId = '', quantity = '', unitId = '') {
                                 const container = document.getElementById('ingredients-container');
                                 const template = document.getElementById('ingredient-options-template');
@@ -330,12 +405,19 @@
                                 select.id = 'ingredient-select-' + ingredientRowCount;
                                 select.className = 'block w-full rounded-xl border-2 border-rose-300 px-4 py-2 shadow-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500 bg-white text-gray-900 font-medium transition-all';
                                 
-                                // Клонируем опции из шаблона
-                                const optionsClone = template.content.cloneNode(true);
-                                select.appendChild(optionsClone);
+                                // Добавляем опции, исключая уже выбранные
+                                const selectedIds = getSelectedIngredientIds(ingredientRowCount);
+                                select.innerHTML = '<option value="">Выберите ингредиент</option>';
+                                const options = template.content.querySelectorAll('option');
+                                options.forEach(option => {
+                                    if (option.value && !selectedIds.includes(option.value)) {
+                                        const newOption = option.cloneNode(true);
+                                        select.appendChild(newOption);
+                                    }
+                                });
                                 
                                 // Устанавливаем выбранное значение, если указано
-                                if (ingredientId) {
+                                if (ingredientId && !selectedIds.includes(ingredientId)) {
                                     select.value = ingredientId;
                                 }
                                 
@@ -409,6 +491,8 @@
                                 select.addEventListener('change', function() {
                                     updateUnitsForIngredient();
                                     this.classList.remove('border-red-500');
+                                    // Обновляем все селекты ингредиентов при изменении
+                                    updateAllIngredientSelects();
                                 });
                                 
                                 // Обработчик для количества
@@ -457,21 +541,39 @@
                                 
                                 container.appendChild(row);
                                 ingredientRowCount++;
+                                
+                                // Скрываем ошибку при добавлении нового ингредиента
+                                const ingredientsError = document.getElementById('ingredients_error');
+                                if (ingredientsError) {
+                                    ingredientsError.classList.add('hidden');
+                                    ingredientsError.textContent = '';
+                                }
                             }
 
                             function removeIngredientRow(rowId) {
                                 const container = document.getElementById('ingredients-container');
+                                const ingredientsError = document.getElementById('ingredients_error');
                                 const rows = container.querySelectorAll('[id^="ingredient-row-"]');
                                 
                                 // Проверяем, что не удаляем последний ингредиент
                                 if (rows.length <= 1) {
-                                    alert('Нельзя удалить последний ингредиент. Продукт должен содержать хотя бы один ингредиент.');
+                                    if (ingredientsError) {
+                                        ingredientsError.textContent = 'Продукция должна содержать хотя бы один ингредиент.';
+                                        ingredientsError.classList.remove('hidden');
+                                    }
                                     return;
                                 }
                                 
                                 const row = document.getElementById('ingredient-row-' + rowId);
                                 if (row) {
                                     row.remove();
+                                    // Скрываем ошибку, если она была показана
+                                    if (ingredientsError) {
+                                        ingredientsError.classList.add('hidden');
+                                        ingredientsError.textContent = '';
+                                    }
+                                    // Обновляем все селекты ингредиентов после удаления
+                                    updateAllIngredientSelects();
                                 }
                             }
 
@@ -481,6 +583,10 @@
                                     currentRecepts.forEach(function(recept) {
                                         addIngredientRow(recept.ingredient_id, recept.quantity, recept.unit_id);
                                     });
+                                    // Обновляем все селекты после загрузки
+                                    setTimeout(function() {
+                                        updateAllIngredientSelects();
+                                    }, 100);
                                 } else {
                                     addIngredientRow();
                                 }
@@ -655,6 +761,38 @@
                                 } else {
                                     hideFieldError(categoryError);
                                     categorySelect.classList.remove('border-red-500');
+                                }
+
+                                // Проверка изображений: нельзя удалить все без загрузки новых
+                                const deleteCheckboxes = document.querySelectorAll('input[name="delete_images[]"]:checked');
+                                const imagesToDeleteCount = deleteCheckboxes.length;
+                                const currentImagesCount = document.querySelectorAll('input[name="delete_images[]"]').length;
+                                const newImagesInput = document.querySelector('input[name="images[]"]');
+                                const newImagesCount = newImagesInput && newImagesInput.files ? newImagesInput.files.length : 0;
+                                const remainingImagesCount = currentImagesCount - imagesToDeleteCount + newImagesCount;
+                                
+                                if (remainingImagesCount < 1) {
+                                    const imagesErrorElement = document.querySelector('.images-error-message');
+                                    if (imagesErrorElement) {
+                                        imagesErrorElement.textContent = 'У продукта должно быть хотя бы одно изображение. ';
+                                        imagesErrorElement.classList.remove('hidden');
+                                    } else {
+                                        // Создаем элемент для ошибки, если его нет
+                                        const imagesContainer = document.querySelector('input[name="images[]"]').closest('div');
+                                        if (imagesContainer) {
+                                            const errorDiv = document.createElement('div');
+                                            errorDiv.className = 'mt-2 text-sm text-red-600 images-error-message';
+                                            errorDiv.textContent = 'У продукта должно быть хотя бы одно изображение.';
+                                            imagesContainer.appendChild(errorDiv);
+                                        }
+                                    }
+                                    hasErrors = true;
+                                } else {
+                                    const imagesErrorElement = document.querySelector('.images-error-message');
+                                    if (imagesErrorElement) {
+                                        imagesErrorElement.classList.add('hidden');
+                                        imagesErrorElement.textContent = '';
+                                    }
                                 }
 
                                 // Проверка ингредиентов

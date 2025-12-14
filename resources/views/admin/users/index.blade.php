@@ -152,10 +152,9 @@
                                             @endif
                                             @php
                                                 $currentUser = Auth::user();
-                                                $isCurrentUserAndAdmin = $currentUser && (int)$currentUser->id === (int)$user->id && $currentUser->role == 2;
-                                                $isAdmin = $user->role == 2;
+                                                $isCurrentUser = $currentUser && (int)$currentUser->id === (int)$user->id;
                                                 $isRegularUser = $user->role == 1;
-                                                $canDelete = !$isCurrentUserAndAdmin && !$isAdmin && !$isRegularUser;
+                                                $canDelete = !$isCurrentUser && !$isRegularUser;
                                             @endphp
                                             @if($canDelete)
                                                 <form action="{{ route('admin.users.destroy', $user) }}" method="POST" class="inline" onsubmit="return confirm('Вы уверены, что хотите удалить этого пользователя?');">

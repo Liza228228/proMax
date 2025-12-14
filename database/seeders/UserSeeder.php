@@ -14,7 +14,7 @@ class UserSeeder extends Seeder
     {
         // Администратор (роль 2)
         User::updateOrCreate(
-            ['login' => 'admim'],
+            ['login' => 'admin'],
             [
                 'last_name' => 'Иванов',
                 'first_name' => 'Иван',
@@ -26,7 +26,7 @@ class UserSeeder extends Seeder
 
         // Менеджер (роль 3)
         User::updateOrCreate(
-            ['login' => 'meneger'],
+            ['login' => 'menager'],
             [
                 'last_name' => 'Федоров',
                 'first_name' => 'Кирилл',

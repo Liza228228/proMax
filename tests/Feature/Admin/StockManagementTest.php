@@ -40,7 +40,7 @@ class StockManagementTest extends TestCase
             'price' => 1200.00,
             'weight' => 1000.00,
             'available' => true,
-            'expiration_date' => 7,
+            'expiration_date' => -1,
             'idCategory' => $category->id
         ]);
 

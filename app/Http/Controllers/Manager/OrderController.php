@@ -10,9 +10,7 @@ use Illuminate\View\View;
 
 class OrderController extends Controller
 {
-    /**
-     * Display a listing of the orders.
-     */
+ 
     public function index(Request $request): View
     {
         $query = Order::with(['user', 'items.product']);

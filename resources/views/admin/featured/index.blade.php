@@ -31,8 +31,7 @@
                             <form method="POST" action="{{ route('admin.featured.reset') }}" class="inline">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="text-sm font-bold text-red-600 hover:text-red-800 px-4 py-2 rounded-xl hover:bg-red-50"
-                                        onclick="return confirm('Вы уверены? Будут показываться последние 6 добавленных товаров.')">
+                                <button type="submit" class="text-sm font-bold text-red-600 hover:text-red-800 px-4 py-2 rounded-xl hover:bg-red-50">
                                     Сбросить выбор
                                 </button>
                             </form>
@@ -64,6 +63,19 @@
                                         <h4 class="font-bold text-gray-900">{{ $product->name_product }}</h4>
                                         <p class="text-sm font-semibold bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent">{{ number_format($product->price, 0, '.', ' ') }} ₽</p>
                                     </div>
+
+                                    <!-- Кнопка удаления -->
+                                    <form method="POST" action="{{ route('admin.featured.remove') }}" class="inline">
+                                        @csrf
+                                        @method('DELETE')
+                                        <input type="hidden" name="product_id" value="{{ $product->id }}">
+                                        <button type="submit" class="text-red-600 hover:text-red-800 font-bold px-3 py-2 rounded-xl hover:bg-red-50 transition-colors"
+                                                title="Удалить из новинок">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                        </button>
+                                    </form>
                                 </div>
                             @endforeach
                         </div>

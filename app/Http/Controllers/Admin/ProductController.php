@@ -639,7 +639,7 @@ class ProductController extends Controller
         }
 
         // Вычисляем срок годности: текущая дата + количество дней из products.expiration_date
-        // expiration_date в products хранит количество дней, а не дату
+
         $expirationDays = $product->expiration_date ?? 0;
         $expirationDate = Carbon::today()->addDays($expirationDays);
 
@@ -676,7 +676,7 @@ class ProductController extends Controller
         $product->save();
 
         return redirect()->route('admin.products.show', $product)
-            ->with('success', "Успешно добавлено {$quantityToAdd} шт. продукта. Ингредиенты списаны со складов.");
+            ->with('success', "Успешно добавлено {$quantityToAdd} шт. продукта.");
     }
 
     /**

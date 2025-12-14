@@ -48,7 +48,7 @@
 
                         <!-- Password -->
                         <div class="mt-4">
-                            <x-input-label for="password" :value="__('Пароль (оставьте пустым, чтобы не изменять)')" />
+                            <x-input-label for="password" :value="__('Пароль ')" />
                             <x-text-input id="password" class="block mt-1 w-full" type="password" name="password" />
                             <x-input-error :messages="$errors->get('password')" class="mt-2" />
                         </div>
@@ -78,7 +78,7 @@
                             </select>
                             @if(!$canChangeRole)
                                 <input type="hidden" name="role" value="{{ $user->role }}">
-                                <p class="mt-1 text-xs text-gray-500">Роль администратора нельзя изменить</p>
+                                
                             @endif
                             <x-input-error :messages="$errors->get('role')" class="mt-2" />
                         </div>

@@ -289,7 +289,7 @@
                             @else
                                 <div class="p-8 text-center bg-gradient-to-r from-rose-50 to-pink-50 rounded-xl border-2 border-rose-200">
                                     <p class="text-rose-600 font-semibold">Партии продукции отсутствуют</p>
-                                    <p class="text-sm text-gray-600 mt-2">Добавьте количество продукции через кнопку "Добавить количество"</p>
+
                                 </div>
                             @endif
                         </div>

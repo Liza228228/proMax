@@ -26,8 +26,22 @@ class CartController extends Controller
             return redirect()->back()->with('error', 'Администраторы и менеджеры не могут добавлять товары в корзину');
         }
 
-        // Проверяем доступность товара
-        $availableQuantity = $product->total_quantity;
+        // Загружаем stockProducts для корректного подсчета количества (только не просроченные)
+        $product->load('stockProducts');
+        
+        // Проверяем доступность товара (только не просроченные из stocks_products)
+        $today = Carbon::today();
+        $availableQuantity = $product->stockProducts
+            ->filter(function($stock) use ($today) {
+                if (!$stock->expiration_date) {
+                    return false;
+                }
+                $expirationDate = Carbon::parse($stock->expiration_date)->startOfDay();
+                // Учитываем только товары с сроком годности строго больше текущей даты (не включая сегодня)
+                return $expirationDate->greaterThan($today);
+            })
+            ->sum('quantity') ?? 0;
+            
         if (!$product->available || $availableQuantity <= 0) {
             return redirect()->back()->with('error', 'Товар недоступен для заказа');
         }
@@ -41,8 +55,6 @@ class CartController extends Controller
             ->first();
 
         $quantity = $request->input('quantity', 1);
-
-        $availableQuantity = $product->total_quantity;
         
         if ($cartItem) {
             // Если товар уже есть, увеличиваем количество
@@ -124,7 +136,20 @@ class CartController extends Controller
         }
 
         $product = $cartItem->product;
-        $availableQuantity = $product->total_quantity;
+        
+        // Загружаем stockProducts для корректного подсчета количества (только не просроченные)
+        $product->load('stockProducts');
+        $today = Carbon::today();
+        $availableQuantity = $product->stockProducts
+            ->filter(function($stock) use ($today) {
+                if (!$stock->expiration_date) {
+                    return false;
+                }
+                $expirationDate = Carbon::parse($stock->expiration_date)->startOfDay();
+                // Учитываем только товары с сроком годности строго больше текущей даты (не включая сегодня)
+                return $expirationDate->greaterThan($today);
+            })
+            ->sum('quantity') ?? 0;
         
         if ($quantity > $availableQuantity) {
             if ($request->ajax() || $request->wantsJson()) {
@@ -167,7 +192,7 @@ class CartController extends Controller
         }
 
         $cart = Cart::getOrCreateCart();
-        $items = $cart->items()->with('product.images')->get();
+        $items = $cart->items()->with('product.images', 'product.stockProducts')->get();
         
         $total = $items->sum(function ($item) {
             return $item->quantity * $item->price;
@@ -200,7 +225,7 @@ class CartController extends Controller
         }
 
         $cart = Cart::getOrCreateCart();
-        $items = $cart->items()->with('product.images')->get();
+        $items = $cart->items()->with('product.images', 'product.stockProducts')->get();
         
         if ($items->isEmpty()) {
             return redirect()->route('cart.index')->with('error', 'Ваша корзина пуста');

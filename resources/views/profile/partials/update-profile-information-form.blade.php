@@ -70,6 +70,11 @@
             if (phoneInput) {
                 // Функция форматирования телефона
                 function formatPhone(value) {
+                    // Если значение уже в правильном формате, возвращаем его
+                    if (/^\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}$/.test(value)) {
+                        return value;
+                    }
+                    
                     value = value.replace(/\D/g, '');
                     
                     if (value.startsWith('8')) {
@@ -102,32 +107,42 @@
                     phoneInput.value = formatPhone(phoneInput.value);
                 }
                 
+                // Блокируем ввод букв и других нецифровых символов
+                phoneInput.addEventListener('keydown', function(e) {
+                    // Разрешаем специальные клавиши
+                    const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab', 'Home', 'End', 'Enter'];
+                    if (allowedKeys.includes(e.key)) {
+                        return;
+                    }
+                    
+                    // Разрешаем Ctrl/Cmd комбинации (копирование, вставка и т.д.)
+                    if (e.ctrlKey || e.metaKey) {
+                        return;
+                    }
+                    
+                    // Блокируем все остальные символы, кроме цифр
+                    if (!/[0-9]/.test(e.key)) {
+                        e.preventDefault();
+                        return false;
+                    }
+                });
+                
                 // Применить маску при вводе
                 phoneInput.addEventListener('input', function(e) {
                     e.target.value = formatPhone(e.target.value);
                 });
                 
-                // Очистка при backspace на коротких значениях
-                phoneInput.addEventListener('keydown', function(e) {
-                    if (e.key === 'Backspace' && e.target.value.length <= 4) {
-                        e.target.value = '';
+                // Обрабатываем вставку текста - очищаем от букв и форматируем
+                phoneInput.addEventListener('paste', function(e) {
+                    e.preventDefault();
+                    const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                    const digitsOnly = pastedText.replace(/\D/g, '');
+                    if (digitsOnly) {
+                        e.target.value = formatPhone(digitsOnly);
                     }
                 });
                 
-                // Перед отправкой формы сохраняем только цифры
-                if (profileForm) {
-                    profileForm.addEventListener('submit', function(e) {
-                        const originalValue = phoneInput.value;
-                        phoneInput.value = phoneInput.value.replace(/\D/g, '');
-                        
-                        // Восстанавливаем форматированное значение после отправки (если форма не прошла валидацию)
-                        setTimeout(function() {
-                            if (phoneInput.value && !phoneInput.value.includes('(')) {
-                                phoneInput.value = formatPhone(phoneInput.value);
-                            }
-                        }, 100);
-                    });
-                }
+                // Номер сохраняется в формате +7 (000) 000-00-00, не удаляем форматирование при отправке
             }
         });
     </script>

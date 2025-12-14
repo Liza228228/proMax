@@ -13,9 +13,7 @@ use Illuminate\View\View;
 
 class IngredientController extends Controller
 {
-    /**
-     * Display a listing of the ingredients.
-     */
+
     public function index(Request $request): View
     {
         $query = Ingredient::with('unit')->withCount('recepts');

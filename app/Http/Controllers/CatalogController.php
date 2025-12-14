@@ -81,9 +81,8 @@ class CatalogController extends Controller
         return view('catalog.index', compact('categories'));
     }
 
-    /**
-     * Display products of a specific category.
-     */
+ 
+
     public function category(Request $request, Category $category): View
     {
         $query = Product::with(['category', 'images', 'stockProducts'])

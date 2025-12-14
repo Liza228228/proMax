@@ -96,20 +96,27 @@
                 return true;
             }
 
-            // Проверка уникальности названия склада при вводе
-            nameInput.addEventListener('input', function() {
-                const name = this.value.trim();
+            // Проверка уникальности названия склада и адреса при вводе
+            function checkNameAndAddress() {
+                const name = nameInput.value.trim();
+                const city = cityInput.value.trim();
+                const street = streetInput.value.trim();
+                const house = houseInput.value.trim();
                 
                 clearTimeout(checkTimeout);
                 
                 hideError(nameInput, nameError);
+                hideError(cityInput, cityError);
+                hideError(streetInput, streetError);
+                hideError(houseInput, houseError);
 
-                if (name.length === 0) {
+                if (name.length === 0 || city.length === 0) {
                     return;
                 }
 
                 checkTimeout = setTimeout(function() {
-                    fetch('{{ route("manager.warehouses.checkName") }}?name=' + encodeURIComponent(name), {
+                    // Проверка названия в рамках города
+                    fetch('{{ route("manager.warehouses.checkName") }}?name=' + encodeURIComponent(name) + '&city=' + encodeURIComponent(city), {
                         method: 'GET',
                         headers: {
                             'Content-Type': 'application/json',
@@ -119,14 +126,41 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.exists) {
-                            showError(nameInput, nameError, 'Склад с таким названием уже существует.');
+                            showError(nameInput, nameError, 'Склад с таким названием уже существует в городе "' + city + '".');
                         }
                     })
                     .catch(error => {
                         console.error('Ошибка при проверке названия:', error);
                     });
+
+                    // Проверка адреса (город + улица + дом)
+                    if (city && street && house) {
+                        fetch('{{ route("manager.warehouses.checkAddress") }}?city=' + encodeURIComponent(city) + '&street=' + encodeURIComponent(street) + '&house=' + encodeURIComponent(house), {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.exists) {
+                                showError(cityInput, cityError, 'Склад с таким адресом уже существует.');
+                                showError(streetInput, streetError, '');
+                                showError(houseInput, houseError, '');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Ошибка при проверке адреса:', error);
+                        });
+                    }
                 }, 500);
-            });
+            }
+
+            nameInput.addEventListener('input', checkNameAndAddress);
+            cityInput.addEventListener('input', checkNameAndAddress);
+            streetInput.addEventListener('input', checkNameAndAddress);
+            houseInput.addEventListener('input', checkNameAndAddress);
 
             // Валидация при вводе для всех полей
             cityInput.addEventListener('input', function() {
@@ -170,19 +204,28 @@
                     isValid = false;
                 }
 
-                // Проверка уникальности названия перед отправкой
-                if (isValid && nameInput.value.trim()) {
-                    fetch('{{ route("manager.warehouses.checkName") }}?name=' + encodeURIComponent(nameInput.value.trim()), {
-                        method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
+                // Проверка уникальности названия и адреса перед отправкой
+                if (isValid && nameInput.value.trim() && cityInput.value.trim()) {
+                    const name = nameInput.value.trim();
+                    const city = cityInput.value.trim();
+                    const street = streetInput.value.trim();
+                    const house = houseInput.value.trim();
+
+                    // Проверка названия в рамках города
+                    Promise.all([
+                        fetch('{{ route("manager.warehouses.checkName") }}?name=' + encodeURIComponent(name) + '&city=' + encodeURIComponent(city)),
+                        fetch('{{ route("manager.warehouses.checkAddress") }}?city=' + encodeURIComponent(city) + '&street=' + encodeURIComponent(street) + '&house=' + encodeURIComponent(house))
+                    ])
+                    .then(responses => Promise.all(responses.map(r => r.json())))
+                    .then(([nameData, addressData]) => {
+                        if (nameData.exists) {
+                            showError(nameInput, nameError, 'Склад с таким названием уже существует в городе "' + city + '".');
+                            isValid = false;
                         }
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.exists) {
-                            showError(nameInput, nameError, 'Склад с таким названием уже существует.');
+                        if (addressData.exists) {
+                            showError(cityInput, cityError, 'Склад с таким адресом уже существует.');
+                            showError(streetInput, streetError, '');
+                            showError(houseInput, houseError, '');
                             isValid = false;
                         }
 
@@ -191,7 +234,7 @@
                         }
                     })
                     .catch(error => {
-                        console.error('Ошибка при проверке названия:', error);
+                        console.error('Ошибка при проверке:', error);
                         if (isValid) {
                             form.submit();
                         }

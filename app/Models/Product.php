@@ -155,16 +155,23 @@ class Product extends Model
     {
         // Используем уже загруженные stockProducts, если они есть
         if ($this->relationLoaded('stockProducts')) {
+            $today = Carbon::today();
             return $this->stockProducts
-                ->filter(function($stock) {
-                    return Carbon::parse($stock->expiration_date)->isFuture();
+                ->filter(function($stock) use ($today) {
+                    if (!$stock->expiration_date) {
+                        return false;
+                    }
+                    $expirationDate = Carbon::parse($stock->expiration_date)->startOfDay();
+                    // Учитываем только товары с сроком годности строго больше текущей даты (не включая сегодня)
+                    return $expirationDate->greaterThan($today);
                 })
                 ->sum('quantity') ?? 0;
         }
         
         // Если не загружены, делаем запрос
         return $this->stockProducts()
-            ->where('expiration_date', '>=', Carbon::today())
+            ->whereNotNull('expiration_date')
+            ->where('expiration_date', '>', Carbon::today())
             ->sum('quantity') ?? 0;
     }
 

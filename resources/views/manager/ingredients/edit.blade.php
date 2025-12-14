@@ -68,7 +68,7 @@
                                 step="1"
                                 required
                             />
-                            <p class="mt-1 text-sm text-gray-500">Укажите срок годности в количестве дней</p>
+
                             <x-input-error :messages="$errors->get('expiration_days')" class="mt-2" />
                         </div>
 

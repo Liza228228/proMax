@@ -18,7 +18,13 @@ class ProfileUpdateRequest extends FormRequest
         return [
             'last_name' => ['required', 'string', 'max:255'],
             'first_name' => ['required', 'string', 'max:255'],
-            'phone' => ['required', 'string', 'max:20', 'regex:/^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$/'],
+            'phone' => [
+                'required',
+                'string',
+                'max:20',
+                'regex:/^\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}$/',
+                Rule::unique(User::class)->ignore($this->user()->id),
+            ],
             'login' => [
                 'required',
                 'string',
@@ -40,7 +46,8 @@ class ProfileUpdateRequest extends FormRequest
             'phone.required' => 'Поле "Телефон" обязательно для заполнения.',
             'phone.string' => 'Поле "Телефон" должно быть строкой.',
             'phone.max' => 'Поле "Телефон" не должно превышать 20 символов.',
-            'phone.regex' => 'Телефон должен быть в правильном формате.',
+            'phone.regex' => 'Телефон должен быть в формате +7 (XXX) XXX-XX-XX.',
+            'phone.unique' => 'Пользователь с таким номером телефона уже зарегистрирован.',
             'login.required' => 'Поле "Логин" обязательно для заполнения.',
             'login.string' => 'Поле "Логин" должно быть строкой.',
             'login.max' => 'Поле "Логин" не должно превышать 255 символов.',
