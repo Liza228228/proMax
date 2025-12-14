@@ -19,7 +19,7 @@
                 <div class="bg-white overflow-hidden shadow-xl sm:rounded-2xl border-2 border-rose-200">
                     <div class="p-8">
                         <h3 class="text-2xl font-bold bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent mb-6">
-                            Выберите товары для заказа
+                            Выберите продукцию для заказа
                         </h3>
 
                         <div class="space-y-4 mb-8">

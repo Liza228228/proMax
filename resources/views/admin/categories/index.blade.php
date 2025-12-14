@@ -109,7 +109,7 @@
                                                 Редактировать
                                             </a>
                                             @if($category->products_count > 0)
-                                                <span class="text-gray-400 italic text-sm" title="В категории есть продукты">
+                                                <span class="text-gray-400  text-sm" title="В категории есть продукты">
                                                     Нельзя удалить
                                                 </span>
                                             @else

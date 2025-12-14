@@ -51,9 +51,7 @@
                                     value="{{ $warehouse->name }}" 
                                     disabled 
                                 />
-                                <p class="mt-1 text-xs text-rose-600 font-medium">
-                                    Текущий склад
-                                </p>
+                                
                             </div>
 
                             <!-- Склад-получатель -->

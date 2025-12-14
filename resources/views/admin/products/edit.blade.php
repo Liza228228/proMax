@@ -720,6 +720,10 @@
                                     showFieldError(priceError, priceValidation.error);
                                     priceInput.classList.add('border-red-500');
                                     hasErrors = true;
+                                } else if (priceValidation.value <= 0) {
+                                    showFieldError(priceError, 'Цена должна быть больше 0');
+                                    priceInput.classList.add('border-red-500');
+                                    hasErrors = true;
                                 } else {
                                     hideFieldError(priceError);
                                     priceInput.classList.remove('border-red-500');
@@ -730,6 +734,10 @@
                                     const weightValidation = validateNumber(weightInput.value, 'Вес', false);
                                     if (!weightValidation.valid) {
                                         showFieldError(weightError, weightValidation.error);
+                                        weightInput.classList.add('border-red-500');
+                                        hasErrors = true;
+                                    } else if (weightValidation.value <= 0) {
+                                        showFieldError(weightError, 'Вес должен быть больше 0');
                                         weightInput.classList.add('border-red-500');
                                         hasErrors = true;
                                     } else {

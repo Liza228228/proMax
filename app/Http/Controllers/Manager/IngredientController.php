@@ -134,6 +134,12 @@ class IngredientController extends Controller
                 ->with('error', $errorMessage);
         }
 
+        // Проверяем, есть ли ингредиент на складах
+        if ($ingredient->stockIngredients()->exists()) {
+            return redirect()->route('manager.ingredients.index')
+                ->with('error', "Нельзя удалить ингредиент '{$ingredient->name}', так как он есть на складе.");
+        }
+
         $ingredient->delete();
 
         return redirect()->route('manager.ingredients.index')
