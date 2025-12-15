@@ -48,10 +48,7 @@
                         </div>
                     </form>
 
-                    <div class="mb-6 flex justify-between items-center">
-                        <div class="text-sm font-semibold text-rose-700">
-                            Найдено: {{ $warehouses->total() }} складов
-                        </div>
+                    <div class="mb-6 flex justify-end items-center">
                         <a href="{{ route('manager.warehouses.create') }}" class="inline-flex items-center gap-2 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold px-6 py-2.5 rounded-xl shadow-md">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>

@@ -227,7 +227,7 @@ class PaymentController extends Controller
             return redirect()->route('profile.edit')->with('error', 'В заказе нет товаров. Пожалуйста, обратитесь в поддержку.');
         }
 
-        // Проверяем наличие товаров на складе перед оплатой
+        // Проверяем доступность товаров перед оплатой
         foreach ($orderItems as $orderItem) {
             $product = $orderItem->product;
             if (!$product) {
@@ -235,10 +235,17 @@ class PaymentController extends Controller
                 return redirect()->route('profile.edit')->with('error', 'Товар в заказе не найден. Пожалуйста, обратитесь в поддержку.');
             }
             
+            // Проверяем, что товар доступен
+            if (!$product->available) {
+                return redirect()->route('profile.edit')->with('error', 
+                    'Товар "' . $product->name_product . '" недоступен для оплаты.');
+            }
+            
+            // Проверяем наличие товара на складе
             $availableQuantity = $product->total_quantity;
             if ($availableQuantity < $orderItem->quantity) {
                 return redirect()->route('profile.edit')->with('error', 
-                    'Продукция "' . $product->name_product . '" недоступна в нужном количестве. Доступно: ' . $availableQuantity );
+                    'Товар "' . $product->name_product . '" недоступен в нужном количестве. Доступно: ' . $availableQuantity);
             }
         }
 

@@ -26,18 +26,6 @@ class ProductController extends Controller
      */
     public function index(Request $request): View
     {
-        // Обновляем доступность из stocks_products для всех продуктов
-        Product::chunk(100, function($products) {
-            foreach ($products as $product) {
-                $totalQuantity = $product->stockProducts()
-                    ->where('expiration_date', '>=', Carbon::today())
-                    ->sum('quantity') ?? 0;
-                
-                $product->available = $totalQuantity > 0;
-                $product->saveQuietly();
-            }
-        });
-
         $query = Product::with(['category', 'images', 'stockProducts']);
 
         // Поиск
@@ -343,14 +331,16 @@ class ProductController extends Controller
             'ingredients.*.unit_id.exists' => 'Выбранная единица измерения не существует.',
         ]);
 
-        // Определяем доступность продукта
+        // Определяем доступность продукта из запроса
         $available = $request->has('available') ? 1 : 0;
         
-        // Обновляем доступность на основе количества из stocks_products
+        // Проверяем количество на складе
         $totalQuantity = $product->stockProducts()
             ->where('expiration_date', '>=', Carbon::today())
             ->sum('quantity') ?? 0;
         
+        // Если количество равно 0, принудительно делаем продукт недоступным
+        // Если администратор установил доступность вручную и есть товар на складе, сохраняем его выбор
         if ($totalQuantity == 0) {
             $available = 0;
         }
@@ -364,14 +354,6 @@ class ProductController extends Controller
             'idCategory' => $request->idCategory,
             'available' => $available,
         ]);
-
-        // Обновляем доступность из stocks_products
-        $totalQuantity = $product->stockProducts()
-            ->where('expiration_date', '>=', Carbon::today())
-            ->sum('quantity');
-        
-        $product->available = $totalQuantity > 0;
-        $product->save();
 
         // Удаление выбранных изображений
         if ($request->filled('delete_images')) {
